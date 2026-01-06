@@ -1,21 +1,24 @@
+// Cache name
 const CACHE_NAME = 'egg-shooter-v1';
+
+// Assets to cache
 const ASSETS_TO_CACHE = [
-  '/egg-shooter-game/',
-  '/egg-shooter-game/index.html',
-  '/egg-shooter-game/style.css',
-  '/egg-shooter-game/script.js',
-  '/egg-shooter-game/pwa.js',
-  '/egg-shooter-game/sw.js',
-  '/egg-shooter-game/manifest.json',
-  '/egg-shooter-game/icon-192.png',
-  '/egg-shooter-game/icon-512.png'
+  './',
+  './index.html',
+  './style.css',
+  './script.js',
+  './pwa.js',
+  './manifest.json',
+  'https://cdn-icons-png.flaticon.com/512/528/528076.png'
 ];
 
 // Install event
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS_TO_CACHE))
+      .then(cache => {
+        return cache.addAll(ASSETS_TO_CACHE);
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -39,6 +42,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(response => {
+        return response || fetch(event.request);
+      })
   );
 });
