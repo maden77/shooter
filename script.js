@@ -275,7 +275,34 @@ function update() {
     
     requestAnimationFrame(update);
 }
+  // Restart Game - PERBAIKI INI
+function restartGame() {
+    gameOver = false;
+    score = 0;
+    bombCount = 3;
+    document.getElementById('game-over').classList.add('hidden');
+    updateScore();
+    updateBombButton();
+    initGrid();
+    
+    // Restart music if enabled
+    if (musicEnabled) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log("Music restart failed:", e));
+    }
+    
+    // Restart game loop
+    update();
+}
 
+// Event Listener untuk tombol Main Lagi di game over screen
+document.addEventListener('DOMContentLoaded', function() {
+    // Tambahkan event listener untuk tombol Main Lagi
+    const restartBtn = document.querySelector('#game-over .restart-btn');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', restartGame);
+    }
+});
 // Get Grid Position
 function getGridPosition(r, c) {
     let x = (c * 2 * radius) + radius + (r % 2 === 1 ? radius : 0);
