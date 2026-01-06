@@ -1,7 +1,7 @@
 // Cache name
-const CACHE_NAME = 'egg-shooter-v1';
+const CACHE_NAME = 'egg-shooter-v2';
 
-// Assets to cache
+// Assets to cache (including audio URLs)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,7 +9,14 @@ const ASSETS_TO_CACHE = [
   './script.js',
   './pwa.js',
   './manifest.json',
-  'https://cdn-icons-png.flaticon.com/512/528/528076.png'
+  'https://cdn-icons-png.flaticon.com/512/528/528076.png',
+  // Audio files
+  'https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3',
+  'https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3',
+  'https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-3004.mp3',
+  'https://assets.mixkit.co/sfx/preview/mixkit-bomb-explosion-in-battle-2800.mp3',
+  'https://assets.mixkit.co/sfx/preview/mixkit-game-over-tetris-2047.mp3',
+  'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'
 ];
 
 // Install event
@@ -17,7 +24,23 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        return cache.addAll(ASSETS_TO_CACHE);
+        console.log('Caching assets...');
+        // Cache HTML, CSS, JS files first
+        return cache.addAll(ASSETS_TO_CACHE.slice(0, 7))
+          .then(() => {
+            console.log('Core assets cached');
+            // Cache audio files separately
+            const audioPromises = ASSETS_TO_CACHE.slice(7).map(url => {
+              return fetch(url).then(response => {
+                if (response.ok) {
+                  return cache.put(url, response);
+                }
+              }).catch(err => {
+                console.log('Failed to cache:', url, err);
+              });
+            });
+            return Promise.all(audioPromises);
+          });
       })
       .then(() => self.skipWaiting())
   );
@@ -30,6 +53,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -40,10 +64,46 @@ self.addEventListener('activate', event => {
 
 // Fetch event
 self.addEventListener('fetch', event => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+  
+  // Skip Chrome extensions
+  if (event.request.url.startsWith('chrome-extension://')) return;
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        return response || fetch(event.request);
+        // Return cached response if found
+        if (response) {
+          return response;
+        }
+        
+        // Otherwise fetch from network
+        return fetch(event.request)
+          .then(response => {
+            // Don't cache if not a success response
+            if (!response || response.status !== 200) {
+              return response;
+            }
+            
+            // Clone the response
+            const responseToCache = response.clone();
+            
+            // Cache the new resource
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+            
+            return response;
+          })
+          .catch(error => {
+            console.log('Fetch failed:', error);
+            // Return offline page for HTML requests
+            if (event.request.headers.get('accept').includes('text/html')) {
+              return caches.match('./index.html');
+            }
+          });
       })
   );
 });
