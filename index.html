@@ -35,19 +35,25 @@
     <div id="game-container">
         <header>
             <div class="score-box">Skor: <span id="score">0</span></div>
-            <button id="bomb-btn" class="bomb-btn">💣 BOM (3)</button>
+            <div class="header-controls">
+                <button id="music-btn" class="music-btn">🎵</button>
+                <button id="sound-btn" class="sound-btn">🔊</button>
+                <button id="bomb-btn" class="bomb-btn">💣 BOM (3)</button>
+            </div>
         </header>
 
         <canvas id="gameCanvas"></canvas>
 
-       
+        <!-- Control Hint -->
+        <div class="control-hint">
+           
 
         <!-- Install Prompt -->
         <div id="install-prompt" class="hidden">
             <div class="prompt-content">
                 <div class="prompt-icon">📱</div>
                 <h3>Instal Aplikasi</h3>
-                <p>Instal Egg Shooter di perangkatmu!</p>
+                
                 <div class="prompt-buttons">
                     <button id="install-btn" class="prompt-install-btn">Instal Sekarang</button>
                     <button id="dismiss-install" class="prompt-dismiss-btn">Nanti Saja</button>
@@ -61,9 +67,35 @@
                 <h2>Game Over!</h2>
                 <div class="final-score">Skor Akhir: <span id="final-score">0</span></div>
                 <button onclick="restartGame()" class="restart-btn">Main Lagi</button>
+                <button id="music-toggle-btn" class="music-toggle-btn">🔇 Nyalakan Musik</button>
             </div>
         </div>
     </div>
+
+    <!-- Audio Elements (Hidden) -->
+    <audio id="bg-music" loop preload="auto">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="shoot-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="pop-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-3004.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="bomb-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-bomb-explosion-in-battle-2800.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="game-over-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-over-tetris-2047.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="score-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
 
     <!-- Scripts -->
     <script src="script.js"></script>
