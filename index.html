@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Game Egg Shooter - Game tembak telur seru!">
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA Tags -->
     <meta name="theme-color" content="#FFD700">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Egg Shooter">
     
-    <!-- Icons -->
-    <link rel="icon" href="icon-192.png" type="image/png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <!-- PAKAI INI -->
-<link rel="stylesheet" href="./style.css">
-<script src="./script.js"></script>
-<script src="./pwa.js"></script>
-<link rel="manifest" href="./manifest.json">
-   
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons Online -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
     
     <title>Egg Shooter Game</title>
 </head>
@@ -31,6 +31,7 @@
         <p>Loading...</p>
     </div>
 
+    <!-- Game Container -->
     <div id="game-container">
         <header>
             <div class="score-box">Skor: <span id="score">0</span></div>
@@ -38,6 +39,11 @@
         </header>
 
         <canvas id="gameCanvas"></canvas>
+
+        <!-- Control Hint -->
+        <div class="control-hint">
+            👆 Tap & drag untuk mengarahkan, lepas untuk menembak
+        </div>
 
         <!-- Install Prompt -->
         <div id="install-prompt" class="hidden">
@@ -52,18 +58,12 @@
             </div>
         </div>
 
-        <!-- Control Hint -->
-        <div class="control-hint">
-            👆 Tap & drag untuk mengarahkan, lepas untuk menembak
-        </div>
-
-        <!-- Game Over Screen -->
+        <!-- Game Over -->
         <div id="game-over" class="hidden">
             <div class="game-over-content">
                 <h2>Game Over!</h2>
                 <div class="final-score">Skor Akhir: <span id="final-score">0</span></div>
                 <button onclick="restartGame()" class="restart-btn">Main Lagi</button>
-                <button onclick="showInstallPrompt()" class="install-suggestion-btn">📲 Instal Aplikasi</button>
             </div>
         </div>
     </div>
