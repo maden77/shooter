@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Game Egg Shooter - Tembak bubble telur yang seru!">
+    <title>Egg Shooter Game</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#FFD700">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Egg Shooter">
+    
+    <!-- Icons -->
+    <link rel="icon" href="icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="egg-icon">🥚</div>
+        <h1>Egg Shooter</h1>
+        <p>Loading...</p>
+    </div>
+
+    <div id="game-container">
+        <header>
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <button id="bomb-btn" class="bomb-btn">💣 BOM (3)</button>
+        </header>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Install Prompt -->
+        <div id="install-prompt" class="hidden">
+            <div class="prompt-content">
+                <div class="prompt-icon">📱</div>
+                <h3>Instal Aplikasi</h3>
+                <p>Instal Egg Shooter di perangkatmu untuk pengalaman bermain yang lebih baik!</p>
+                <div class="prompt-buttons">
+                    <button id="install-btn" class="prompt-install-btn">Instal Sekarang</button>
+                    <button id="dismiss-install" class="prompt-dismiss-btn">Nanti Saja</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Hint -->
+        <div class="control-hint">
+            👆 Tap & drag untuk mengarahkan, lepas untuk menembak
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="hidden">
+            <div class="game-over-content">
+                <h2>Game Over!</h2>
+                <div class="final-score">Skor Akhir: <span id="final-score">0</span></div>
+                <button onclick="restartGame()" class="restart-btn">Main Lagi</button>
+                <button onclick="showInstallPrompt()" class="install-suggestion-btn">📲 Instal Aplikasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>
