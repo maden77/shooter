@@ -3,7 +3,18 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const bombBtn = document.getElementById('bomb-btn');
+const musicBtn = document.getElementById('music-btn');
+const soundBtn = document.getElementById('sound-btn');
 
+// Audio Elements
+const bgMusic = document.getElementById('bg-music');
+const shootSound = document.getElementById('shoot-sound');
+const popSound = document.getElementById('pop-sound');
+const bombSound = document.getElementById('bomb-sound');
+const gameOverSound = document.getElementById('game-over-sound');
+const scoreSound = document.getElementById('score-sound');
+
+// Game Settings
 let width, height, radius;
 const colors = ['#FF3E3E', '#00E5FF', '#FFD700', '#FF00FF', '#32FF7E'];
 let bubbles = [];
@@ -16,21 +27,97 @@ const bulletSpeed = 25;
 let gameOver = false;
 let bombCount = 3;
 
+// Audio Settings
+let musicEnabled = true;
+let soundEnabled = true;
+let isFirstTouch = true;
+
 // Initialize Game
 function init() {
     handleResize();
     initGrid();
+    initAudio();
     window.addEventListener('resize', handleResize);
     update();
     
-    // Bomb button event
+    // Event Listeners
     bombBtn.addEventListener('click', useBomb);
+    musicBtn.addEventListener('click', toggleMusic);
+    soundBtn.addEventListener('click', toggleSound);
     updateBombButton();
     
     // Hide splash screen
     setTimeout(() => {
         document.getElementById('splash-screen').classList.add('hidden');
     }, 1500);
+    
+    // First touch to start audio (for mobile)
+    document.addEventListener('click', handleFirstTouch);
+    document.addEventListener('touchstart', handleFirstTouch);
+}
+
+// Handle first touch for audio (mobile requirement)
+function handleFirstTouch() {
+    if (isFirstTouch) {
+        isFirstTouch = false;
+        if (musicEnabled) {
+            bgMusic.play().catch(e => console.log("Audio play failed:", e));
+        }
+        document.removeEventListener('click', handleFirstTouch);
+        document.removeEventListener('touchstart', handleFirstTouch);
+    }
+}
+
+// Initialize Audio
+function initAudio() {
+    // Set volume
+    bgMusic.volume = 0.3;
+    shootSound.volume = 0.5;
+    popSound.volume = 0.7;
+    bombSound.volume = 0.8;
+    gameOverSound.volume = 0.5;
+    scoreSound.volume = 0.6;
+    
+    // Update button states
+    updateAudioButtons();
+}
+
+// Toggle Music
+function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    if (musicEnabled) {
+        bgMusic.play().catch(e => console.log("Music play failed:", e));
+    } else {
+        bgMusic.pause();
+    }
+    updateAudioButtons();
+}
+
+// Toggle Sound Effects
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    updateAudioButtons();
+}
+
+// Update Audio Buttons
+function updateAudioButtons() {
+    musicBtn.textContent = musicEnabled ? '🎵' : '🔇';
+    musicBtn.classList.toggle('muted', !musicEnabled);
+    
+    soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    soundBtn.classList.toggle('muted', !soundEnabled);
+}
+
+// Play Sound Function
+function playSound(sound) {
+    if (!soundEnabled) return;
+    
+    try {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log("Sound play failed:", e));
+    } catch (e) {
+        console.log("Sound error:", e);
+    }
 }
 
 // Handle Resize
@@ -244,6 +331,9 @@ function snapBubble() {
             matches.forEach(m => bubbles[m.r][m.c] = null);
             score += matches.length * 10;
             updateScore();
+            playSound(scoreSound); // Score sound
+        } else {
+            playSound(popSound); // Pop sound
         }
     }
     
@@ -302,6 +392,14 @@ function endGame() {
     gameOver = true;
     document.getElementById('final-score').textContent = score;
     document.getElementById('game-over').classList.remove('hidden');
+    playSound(gameOverSound);
+    
+    // Setup music toggle in game over screen
+    const musicToggleBtn = document.getElementById('music-toggle-btn');
+    if (musicToggleBtn) {
+        musicToggleBtn.textContent = musicEnabled ? '🔇 Matikan Musik' : '🎵 Nyalakan Musik';
+        musicToggleBtn.onclick = toggleMusic;
+    }
 }
 
 // Restart Game
@@ -313,6 +411,12 @@ function restartGame() {
     updateScore();
     updateBombButton();
     initGrid();
+    
+    // Restart music if enabled
+    if (musicEnabled) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log("Music restart failed:", e));
+    }
 }
 
 // Bomb Function
@@ -321,6 +425,7 @@ function useBomb() {
     
     bombCount--;
     updateBombButton();
+    playSound(bombSound);
     
     // Remove random bubble
     let bubblesList = [];
@@ -347,7 +452,7 @@ function updateBombButton() {
     bombBtn.disabled = bombCount <= 0;
 }
 
-// Event Listeners
+// Event Listeners for canvas
 canvas.addEventListener('pointerdown', (e) => {
     if (gameOver || !bullet || bullet.moving) return;
     
@@ -361,6 +466,7 @@ canvas.addEventListener('pointerdown', (e) => {
         bullet.dx = ((tx - bullet.x) / dist) * bulletSpeed;
         bullet.dy = ((ty - bullet.y) / dist) * bulletSpeed;
         bullet.moving = true;
+        playSound(shootSound); // Shoot sound
     }
 });
 
