@@ -1,60 +1,94 @@
-// PWA untuk GitHub Pages
+// PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Sesuaikan path dengan GitHub Pages
-        navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-                console.log('Service Worker terdaftar');
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js')
+            .then(function(registration) {
+                console.log('✅ Service Worker terdaftar');
             })
-            .catch(error => {
-                console.log('Service Worker gagal:', error);
+            .catch(function(error) {
+                console.log('❌ Service Worker gagal:', error);
             });
     });
 }
 
-// Install Prompt untuk GitHub Pages
+// PWA Install Prompt
 let deferredPrompt;
+const installPrompt = document.getElementById('install-prompt');
+const installBtn = document.getElementById('install-btn');
+const dismissBtn = document.getElementById('dismiss-install');
 
+// Check if app is already installed
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches;
+}
+
+// Show install prompt
+function showInstallPrompt() {
+    if (!isAppInstalled() && deferredPrompt) {
+        installPrompt.classList.remove('hidden');
+    }
+}
+
+// Hide install prompt
+function hideInstallPrompt() {
+    installPrompt.classList.add('hidden');
+}
+
+// Event listener for beforeinstallprompt
 window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('📲 PWA bisa diinstall');
+    
+    // Prevent Chrome from automatically showing the prompt
     e.preventDefault();
+    
+    // Stash the event so it can be triggered later
     deferredPrompt = e;
     
-    // Show prompt setelah 3 detik
+    // Show install button after 3 seconds
     setTimeout(() => {
-        if (!window.matchMedia('(display-mode: standalone)').matches) {
+        if (!isAppInstalled()) {
             showInstallPrompt();
         }
     }, 3000);
 });
 
-// Tampilkan install prompt
-function showInstallPrompt() {
-    const prompt = document.getElementById('install-prompt');
-    if (prompt && deferredPrompt) {
-        prompt.classList.remove('hidden');
-    }
+// Install button click handler
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        
+        // Show the install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        console.log(`User response: ${outcome}`);
+        
+        // Hide the install prompt
+        hideInstallPrompt();
+        
+        // We've used the prompt, and can't use it again
+        deferredPrompt = null;
+    });
 }
 
-// Setup buttons
-document.getElementById('install-btn')?.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-        console.log('User menginstall PWA');
-    }
-    
-    document.getElementById('install-prompt').classList.add('hidden');
-    deferredPrompt = null;
-});
-
-document.getElementById('dismiss-install')?.addEventListener('click', () => {
-    document.getElementById('install-prompt').classList.add('hidden');
-});
+// Dismiss button click handler
+if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+        hideInstallPrompt();
+    });
+}
 
 // App installed event
 window.addEventListener('appinstalled', () => {
-    console.log('PWA terinstall!');
+    console.log('🎉 PWA terinstall!');
+    hideInstallPrompt();
+});
+
+// Hide splash screen
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        document.getElementById('splash-screen').classList.add('hidden');
+    }, 1500);
 });
