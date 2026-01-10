@@ -1,113 +1,103 @@
+
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Snake Pro: Mini Edition</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Game Egg Shooter - Game tembak telur seru!">
-    
-    <!-- PWA Tags -->
-    <meta name="theme-color" content="#FFD700">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Egg Shooter">
-    
-    <!-- Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Icons Online -->
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="style.css">
-    
-    <title>Egg Shooter Game</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #050515; margin: 0; overflow: hidden; font-family: sans-serif; color: white; }
+        canvas { display: block; touch-action: none; }
+        #setup, #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,10,30,0.95); padding: 25px; border-radius: 20px; border: 2px solid #a855f7; text-align: center; width: 80%; max-width: 300px; z-index: 100; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #a855f7; margin: 5px 0; width: 90%; background: #1a1a2e; color: white; text-align: center; }
+        button { padding: 15px; background: #a855f7; border: none; color: white; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        #score-box { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 10px; border: 1px solid #a855f7; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div id="splash-screen">
-        <div class="egg-icon">🥚</div>
-        <h1>Egg Shooter</h1>
-        <p>Loading...</p>
+    <div id="score-box">SKOR: <span id="scoreVal">0</span></div>
+    <div id="setup">
+        <h2 style="color:#a855f7; margin:0;">ARENA CACING</h2>
+        <input type="text" id="pName" placeholder="Nama Kamu">
+        <input type="text" id="pID" placeholder="ID Teman (Mabar)">
+        <button id="go">MAIN SEKARANG! 🔊</button>
     </div>
-
-    <!-- Game Container -->
-    <div id="game-container">
-        <header>
-            <div class="score-box">Skor: <span id="score">0</span></div>
-            <div class="header-controls">
-                <button id="music-btn" class="music-btn">🎵</button>
-                <button id="sound-btn" class="sound-btn">🔊</button>
-                <button id="bomb-btn" class="bomb-btn">💣 BOM (3)</button>
-            </div>
-        </header>
-
-        <canvas id="gameCanvas"></canvas>
-
-        <!-- Control Hint -->
-        <div class="control-hint">
-           
-
-        <!-- Install Prompt -->
-        <div id="install-prompt" class="hidden">
-            <div class="prompt-content">
-                <div class="prompt-icon">📱</div>
-                <h3>Instal Aplikasi</h3>
-                
-                <div class="prompt-buttons">
-                    <button id="install-btn" class="prompt-install-btn">Instal Sekarang</button>
-                    <button id="dismiss-install" class="prompt-dismiss-btn">Nanti Saja</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Game Over -->
-        <div id="game-over" class="hidden">
-            <div class="game-over-content">
-                <h2>Game Over!</h2>
-                <div class="final-score">Skor Akhir: <span id="final-score">0</span></div>
-                <button onclick="restartGame()" class="restart-btn">Main Lagi</button>
-                <button id="music-toggle-btn" class="music-toggle-btn">🔇 Nyalakan Musik</button>
-            </div>
-        </div>
+    <div id="gameover" style="display:none;">
+        <h2 style="color:#ef4444;">GAME OVER!</h2>
+        <button onclick="location.reload()">MAIN LAGI 🔄</button>
     </div>
-<!-- Game Over Screen -->
-<div id="game-over" class="hidden">
-    <div class="game-over-content">
-        <h2>Game Over!</h2>
-        <div class="final-score">Skor Akhir: <span id="final-score">0</span></div>
-        <button id="restart-btn" class="restart-btn">Main Lagi</button>
-        <button id="music-toggle-btn" class="music-toggle-btn">🔇 Matikan Musik</button>
-    </div>
-</div>
+    <canvas id="c"></canvas>
+    <script>
+        const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        
+        const pop = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        const fruitUrls = ['https://cdn-icons-png.flaticon.com/128/2909/2909787.png','https://cdn-icons-png.flaticon.com/128/590/590685.png','https://cdn-icons-png.flaticon.com/128/415/415733.png','https://cdn-icons-png.flaticon.com/128/3137/3137031.png'];
+        const fruitImages = fruitUrls.map(url => { const img = new Image(); img.src = url; return img; });
 
-    <!-- Audio Elements (Hidden) -->
-    <audio id="bg-music" loop preload="auto">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="shoot-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="pop-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-3004.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="bomb-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-bomb-explosion-in-battle-2800.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="game-over-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-over-tetris-2047.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="score-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
-    </audio>
+        let play = false, me = { x: canvas.width/2, y: canvas.height/2, a: 0, p: [], n: "", c: "#a855f7", score: 0 };
+        for(let i=0; i<20; i++) me.p.push({x: me.x, y: me.y});
 
-    <!-- Scripts -->
-    <script src="script.js"></script>
-    <script src="pwa.js"></script>
+        let bots = [], foods = [];
+        for(let i=0; i<6; i++) bots.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, a: Math.random()*Math.PI*2, p: Array(20).fill({x:0,y:0}), n: "Bot-"+i, c: "#ef4444"});
+        for(let i=0; i<40; i++) foods.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, imgIdx: Math.floor(Math.random()*fruitImages.length)});
+
+        document.getElementById('go').onclick = () => {
+            me.n = document.getElementById('pName').value || "Pemain";
+            document.getElementById('setup').style.display = 'none'; play = true;
+        };
+
+        // KONTROL SIMPLE: Cacing mengikuti arah sentuhan jari di layar
+        window.addEventListener('touchmove', e => {
+            if(!play) return;
+            let t = e.touches[0];
+            me.a = Math.atan2(t.clientY - me.p[0].y, t.clientX - me.p[0].x);
+        }, {passive: false});
+
+        function drawSnake(p, c, n) {
+            // LOGIKA UKURAN: Semakin panjang p (badan), radius semakin kecil (min: 5px)
+            let radius = Math.max(5, 12 - (p.length / 50));
+            p.forEach((s, i) => {
+                ctx.beginPath(); ctx.arc(s.x, s.y, i==0?radius+3:radius, 0, 7);
+                ctx.fillStyle = i==0?"#fff":c; ctx.fill();
+            });
+            ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.fillText(n, p[0].x, p[0].y-15);
+        }
+
+        function loop() {
+            ctx.fillStyle = "#050515"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            if(play) {
+                let h = me.p[0];
+                me.x = (h.x + Math.cos(me.a)*3.5 + canvas.width) % canvas.width;
+                me.y = (h.y + Math.sin(me.a)*3.5 + canvas.height) % canvas.height;
+                me.p.unshift({x: me.x, y: me.y}); me.p.pop();
+
+                foods.forEach(f => {
+                    if(Math.hypot(me.x-f.x, me.y-f.y) < 20) {
+                        pop.currentTime=0; pop.play();
+                        f.x=Math.random()*canvas.width; f.y=Math.random()*canvas.height;
+                        for(let i=0; i<4; i++) me.p.push({x:me.x, y:me.y});
+                        me.score += 10; document.getElementById('scoreVal').innerText = me.score;
+                    }
+                });
+
+                bots.forEach(b => {
+                    // Tabrakan dengan Bot
+                    b.p.forEach(part => {
+                        if(Math.hypot(me.x-part.x, me.y-part.y) < 10) { play=false; document.getElementById('gameover').style.display='block'; }
+                    });
+                    b.a += (Math.random()-0.5)*0.2;
+                    b.x = (b.p[0].x + Math.cos(b.a)*2.5 + canvas.width) % canvas.width;
+                    b.y = (b.p[0].y + Math.sin(b.a)*2.5 + canvas.height) % canvas.height;
+                    b.p.unshift({x:b.x, y:b.y}); b.p.pop();
+                    drawSnake(b.p, b.c, b.n);
+                });
+                drawSnake(me.p, me.c, me.n);
+            }
+            foods.forEach(f => ctx.drawImage(fruitImages[f.imgIdx], f.x-10, f.y-10, 20, 20));
+            requestAnimationFrame(loop);
+        }
+        loop();
+    </script>
 </body>
 </html>
