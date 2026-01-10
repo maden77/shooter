@@ -1,120 +1,272 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Snake Pro: Mini Edition</title>
+    <meta charset="UTF-8">
+    <title>Egg Shooter Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <meta name="theme-color" content="#2c3e50">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192x192.png" sizes="192x192">
-  <link rel="icon" href="icon-512x512.png" sizes="512x512">
-    <style>
+    <meta name="theme-color" content="#a855f7">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
+    
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
     <style>
-        body { background: #050515; margin: 0; overflow: hidden; font-family: sans-serif; color: white; }
+        body { 
+            background: #050515; 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: white; 
+        }
         canvas { display: block; touch-action: none; }
-        #setup, #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,10,30,0.95); padding: 25px; border-radius: 20px; border: 2px solid #a855f7; text-align: center; width: 80%; max-width: 300px; z-index: 100; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #a855f7; margin: 5px 0; width: 90%; background: #1a1a2e; color: white; text-align: center; }
-        button { padding: 15px; background: #a855f7; border: none; color: white; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
-        #score-box { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 10px; border: 1px solid #a855f7; font-weight: bold; }
+
+        /* UI Containers */
+        #setup, #gameover { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(10, 10, 30, 0.95); 
+            padding: 25px; 
+            border-radius: 20px; 
+            border: 2px solid #a855f7; 
+            text-align: center; 
+            width: 80%; 
+            max-width: 300px; 
+            z-index: 100; 
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .hidden { display: none !important; }
+
+        input { 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px solid #a855f7; 
+            background: #1a1a3a; 
+            color: white; 
+            width: 80%; 
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        button { 
+            padding: 12px 25px; 
+            background: #a855f7; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #9333ea; }
+
+        /* PWA Install Banner */
+        #install-prompt {
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: #a855f7; 
+            padding: 15px; 
+            border-radius: 12px;
+            z-index: 2000; 
+            text-align: center; 
+            width: 85%; 
+            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #scoreBox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <div id="score-box">SKOR: <span id="scoreVal">0</span></div>
+
+    <div id="scoreBox">Score: <span id="scoreVal">0</span></div>
+
     <div id="setup">
-        <h2 style="color:#a855f7; margin:0;">ARENA CACING</h2>
-        <input type="text" id="pName" placeholder="Nama Kamu">
-        <input type="text" id="pID" placeholder="ID Teman (Mabar)">
-        <button id="go">MAIN SEKARANG! 🔊</button>
+        <h2 style="color: #FFD700;">Egg Shooter</h2>
+        <input type="text" id="nick" placeholder="Nama Kamu" maxlength="10">
+        <button onclick="startGame()">MAIN SEKARANG</button>
     </div>
-    <div id="gameover" style="display:none;">
-        <h2 style="color:#ef4444;">GAME OVER!</h2>
-        <button onclick="location.reload()">MAIN LAGI 🔄</button>
+
+    <div id="gameover" class="hidden">
+        <h2 style="color: #ff4444;">GAME OVER</h2>
+        <p id="finalScore"></p>
+        <button onclick="location.reload()">COBA LAGI</button>
     </div>
-    <canvas id="c"></canvas>
+
+    <div id="install-prompt" class="hidden">
+        <p style="margin: 0 0 10px 0;">Install <b>Egg Shooter</b> di layar utama agar lebih ringan!</p>
+        <button id="install-btn" style="background: white; color: #a855f7;">INSTALL</button>
+        <button id="dismiss-install" style="background: transparent; color: white; border: none; margin-left: 10px;">Nanti</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="pwa.js"></script>
+
     <script>
-        const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        
-        const pop = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
-        const fruitUrls = ['https://cdn-icons-png.flaticon.com/128/2909/2909787.png','https://cdn-icons-png.flaticon.com/128/590/590685.png','https://cdn-icons-png.flaticon.com/128/415/415733.png','https://cdn-icons-png.flaticon.com/128/3137/3137031.png'];
-        const fruitImages = fruitUrls.map(url => { const img = new Image(); img.src = url; return img; });
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let play = false;
 
-        let play = false, me = { x: canvas.width/2, y: canvas.height/2, a: 0, p: [], n: "", c: "#a855f7", score: 0 };
-        for(let i=0; i<20; i++) me.p.push({x: me.x, y: me.y});
+        // Atur ukuran canvas
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        let bots = [], foods = [];
-        for(let i=0; i<6; i++) bots.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, a: Math.random()*Math.PI*2, p: Array(20).fill({x:0,y:0}), n: "Bot-"+i, c: "#ef4444"});
-        for(let i=0; i<40; i++) foods.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, imgIdx: Math.floor(Math.random()*fruitImages.length)});
-
-        document.getElementById('go').onclick = () => {
-            me.n = document.getElementById('pName').value || "Pemain";
-            document.getElementById('setup').style.display = 'none'; play = true;
+        // Data Pemain
+        let me = { 
+            x: canvas.width/2, 
+            y: canvas.height/2, 
+            p: [], 
+            a: 0, 
+            score: 0, 
+            n: "Player", 
+            c: "#a855f7" 
         };
+        
+        let foods = [];
+        let bots = [];
+        const fruitImages = [];
+        const fruitSources = [
+            'https://cdn-icons-png.flaticon.com/512/528/528076.png', // Egg icon
+            'https://cdn-icons-png.flaticon.com/512/2909/2909808.png' // Other icon
+        ];
 
-        // KONTROL SIMPLE: Cacing mengikuti arah sentuhan jari di layar
-        window.addEventListener('touchmove', e => {
-            if(!play) return;
-            let t = e.touches[0];
-            me.a = Math.atan2(t.clientY - me.p[0].y, t.clientX - me.p[0].x);
-        }, {passive: false});
+        // Load Gambar
+        fruitSources.forEach(src => {
+            const img = new Image();
+            img.src = src;
+            fruitImages.push(img);
+        });
 
-        function drawSnake(p, c, n) {
-            // LOGIKA UKURAN: Semakin panjang p (badan), radius semakin kecil (min: 5px)
-            let radius = Math.max(5, 12 - (p.length / 50));
-            p.forEach((s, i) => {
-                ctx.beginPath(); ctx.arc(s.x, s.y, i==0?radius+3:radius, 0, 7);
-                ctx.fillStyle = i==0?"#fff":c; ctx.fill();
-            });
-            ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.fillText(n, p[0].x, p[0].y-15);
+        function startGame() {
+            const nickInput = document.getElementById('nick').value;
+            if(nickInput) me.n = nickInput;
+            document.getElementById('setup').classList.add('hidden');
+            
+            // Inisialisasi awal
+            me.p = Array(10).fill({x: me.x, y: me.y});
+            for(let i=0; i<15; i++) spawnFood();
+            for(let i=0; i<3; i++) spawnBot();
+            
+            play = true;
         }
 
-        function loop() {
-            ctx.fillStyle = "#050515"; ctx.fillRect(0,0,canvas.width,canvas.height);
-            if(play) {
-                let h = me.p[0];
-                me.x = (h.x + Math.cos(me.a)*3.5 + canvas.width) % canvas.width;
-                me.y = (h.y + Math.sin(me.a)*3.5 + canvas.height) % canvas.height;
-                me.p.unshift({x: me.x, y: me.y}); me.p.pop();
+        function spawnFood() {
+            foods.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                imgIdx: Math.floor(Math.random() * fruitImages.length)
+            });
+        }
 
-                foods.forEach(f => {
-                    if(Math.hypot(me.x-f.x, me.y-f.y) < 20) {
-                        pop.currentTime=0; pop.play();
-                        f.x=Math.random()*canvas.width; f.y=Math.random()*canvas.height;
-                        for(let i=0; i<4; i++) me.p.push({x:me.x, y:me.y});
-                        me.score += 10; document.getElementById('scoreVal').innerText = me.score;
+        function spawnBot() {
+            bots.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                a: Math.random() * Math.PI * 2,
+                p: Array(10).fill({x: 0, y: 0}),
+                c: '#ff4444',
+                n: "Bot Egg"
+            });
+        }
+
+        function drawSnake(p, color, name) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            p.forEach((pt, i) => {
+                if(i === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.fillText(name, p[0].x - 10, p[0].y - 15);
+        }
+
+        // Kontrol Mouse/Touch
+        canvas.addEventListener('mousemove', e => {
+            if(!play) return;
+            me.a = Math.atan2(e.clientY - me.y, e.clientX - me.x);
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            if(!play) return;
+            const touch = e.touches[0];
+            me.a = Math.atan2(touch.clientY - me.y, touch.clientX - me.x);
+        }, {passive: false});
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if(play) {
+                // Update Posisi Player
+                me.x = (me.x + Math.cos(me.a) * 3 + canvas.width) % canvas.width;
+                me.y = (me.y + Math.sin(me.a) * 3 + canvas.height) % canvas.height;
+                me.p.unshift({x: me.x, y: me.y});
+                me.p.pop();
+
+                // Cek makan
+                foods.forEach((f, i) => {
+                    if(Math.hypot(me.x - f.x, me.y - f.y) < 20) {
+                        foods.splice(i, 1);
+                        spawnFood();
+                        me.score += 10;
+                        document.getElementById('scoreVal').innerText = me.score;
+                        me.p.push({...me.p[me.p.length-1]}); // Tambah panjang
                     }
                 });
 
+                // Bot Logic & Render
                 bots.forEach(b => {
-                    // Tabrakan dengan Bot
-                    b.p.forEach(part => {
-                        if(Math.hypot(me.x-part.x, me.y-part.y) < 10) { play=false; document.getElementById('gameover').style.display='block'; }
-                    });
-                    b.a += (Math.random()-0.5)*0.2;
-                    b.x = (b.p[0].x + Math.cos(b.a)*2.5 + canvas.width) % canvas.width;
-                    b.y = (b.p[0].y + Math.sin(b.a)*2.5 + canvas.height) % canvas.height;
-                    b.p.unshift({x:b.x, y:b.y}); b.p.pop();
+                    b.a += (Math.random() - 0.5) * 0.2;
+                    b.x = (b.p[0].x + Math.cos(b.a) * 2.5 + canvas.width) % canvas.width;
+                    b.y = (b.p[0].y + Math.sin(b.a) * 2.5 + canvas.height) % canvas.height;
+                    b.p.unshift({x: b.x, y: b.y});
+                    b.p.pop();
                     drawSnake(b.p, b.c, b.n);
+
+                    // Tabrakan dengan Bot
+                    if(Math.hypot(me.x - b.x, me.y - b.y) < 15) {
+                        play = false;
+                        document.getElementById('gameover').classList.remove('hidden');
+                        document.getElementById('finalScore').innerText = "Skor Akhir: " + me.score;
+                    }
                 });
+
                 drawSnake(me.p, me.c, me.n);
             }
-            foods.forEach(f => ctx.drawImage(fruitImages[f.imgIdx], f.x-10, f.y-10, 20, 20));
+
+            // Render Makanan
+            foods.forEach(f => {
+                if(fruitImages[f.imgIdx].complete) {
+                    ctx.drawImage(fruitImages[f.imgIdx], f.x-10, f.y-10, 20, 20);
+                }
+            });
+
             requestAnimationFrame(loop);
         }
+
         loop();
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {navigator.serviceWorker.register('sw.js')
-                .then((registration) => {
-                    console.log('SW registered: ', registration);
-                })
-                .catch((registrationError) => {
-                    console.log('SW registration failed: ', registrationError);
-                });
-            });
-        }
-    
     </script>
 </body>
 </html>
