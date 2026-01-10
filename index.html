@@ -41,6 +41,10 @@
         <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin: 10px 0;">
             <p style="font-size: 0.7em; margin: 0;">ID Mabar Kamu:</p>
             <p id="my-id">Menghubungkan...</p>
+            <input type="number" id="joinId" placeholder="Masukkan 4 Digit ID Teman" 
+       oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);"
+       style="width: 80%; padding: 8px; text-align: center; letter-spacing: 5px; font-weight: bold;">
+            
             <input type="text" id="joinId" placeholder="ID Teman">
             <button onclick="gabungMabar()" style="background: #22c55e; padding: 5px; font-size: 0.8em;">Gabung Teman</button>
         </div>
@@ -87,6 +91,24 @@
                 osc.start(); osc.stop(audioCtx.currentTime + 0.4);
             }
         }
+        // Membuat ID 4 Digit Acak
+const customId = Math.floor(1000 + Math.random() * 9000).toString();
+const peer = new Peer(customId); // Mendaftarkan ID 4 digit ke server PeerJS
+
+peer.on('open', (id) => {
+    myPeerId = id;
+    document.getElementById('my-id').innerText = id; // Akan muncul 4 angka
+    console.log('ID Mabar Kamu: ' + id);
+});
+
+// Jika ID sudah dipakai orang lain, otomatis buat baru
+peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+        const newId = Math.floor(1000 + Math.random() * 9000).toString();
+        location.reload(); // Refresh untuk coba ID baru
+    }
+});
+        
 
         // --- MULTIPLAYER ---
         const peer = new Peer();
