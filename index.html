@@ -158,11 +158,90 @@
             ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
             ctx.fillText(n, p[0].x - 15, p[0].y - 25);
         }
+    function loop() {
+    if (!play) return;
 
-        function loop() {
-            if(!play) return;
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            ctx.fillStyle = '#050515'; ctx.fillRect(0,0,canvas.width, canvas.height);
+    // 1. MEMBERSIHKAN LAYAR
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#050515';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. PERGERAKAN HALUS (Lerping Sudut)
+    let diff = targetAngle - me.a;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    me.a += diff * 0.15; // Kecepatan belok yang nyaman di Android
+
+    // 3. UPDATE POSISI SAYA
+    me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
+    me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
+    me.p.unshift({ x: me.x, y: me.y });
+    me.p.pop();
+
+    // 4. KIRIM DATA MABAR
+    if (conn && conn.open) {
+        conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n });
+    }
+
+    // 5. MAKANAN BIASA
+    foods.forEach((f, i) => {
+        if (fruitImages[f.imgIdx].complete) {
+            ctx.drawImage(fruitImages[f.imgIdx], f.x - 15, f.y - 15, 30, 30);
+        }
+        if (Math.hypot(me.x - f.x, me.y - f.y) < 25) {
+            foods.splice(i, 1);
+            spawnFood();
+            playSound('makan');
+            me.score += 10;
+            document.getElementById('scoreVal').innerText = me.score;
+            me.p.push({ ...me.p[me.p.length - 1] });
+        }
+    });
+
+    // 6. LOGIKA BOT (TABRAK BOT = BOT HANCUR)
+    bots.forEach((b, index) => {
+        b.a += (Math.random() - 0.5) * 0.2;
+        b.x = (b.x + Math.cos(b.a) * 1.5 + canvas.width) % canvas.width;
+        b.y = (b.y + Math.sin(b.a) * 1.5 + canvas.height) % canvas.height;
+        b.p.unshift({ x: b.x, y: b.y });
+        b.p.pop();
+        drawSnake(b.p, b.c, b.n);
+
+        // Jika kepala saya menyentuh badan atau kepala Bot
+        if (Math.hypot(me.x - b.x, me.y - b.y) < 25) {
+            // Bot meledak jadi makanan!
+            for (let i = 0; i < 5; i++) {
+                foods.push({
+                    x: b.x + (Math.random() - 0.5) * 60,
+                    y: b.y + (Math.random() - 0.5) * 60,
+                    imgIdx: Math.floor(Math.random() * 3)
+                });
+            }
+            bots.splice(index, 1);
+            spawnBot(); // Munculkan bot baru di lokasi acak
+            me.score += 50;
+            document.getElementById('scoreVal').innerText = me.score;
+            playSound('makan');
+            if (navigator.vibrate) navigator.vibrate(30);
+        }
+    });
+
+    // 7. LAWAN MABAR (TABRAK INI BARU MATI)
+    Object.values(opponents).forEach(opp => {
+        drawSnake(opp.p, '#22c55e', opp.n);
+        // Cek tabrakan kepala saya ke badan lawan
+        opp.p.forEach((pt) => {
+            if (Math.hypot(me.x - pt.x, me.y - pt.y) < 18) {
+                gameOver();
+            }
+        });
+    });
+
+    // 8. GAMBAR CACING SAYA
+    drawSnake(me.p, me.c, me.n);
+
+    requestAnimationFrame(loop);
+}
 
             // Pergerakan Halus (Lerp)
             let diff = targetAngle - me.a;
