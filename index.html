@@ -57,6 +57,21 @@
         <p id="finalScore"></p>
         <button onclick="location.reload()" style="background: #3b82f6;">Main Lagi</button>
     </div>
+  <div id="setup">
+    <h1 style="color: #a855f7;">Cacing Berkuasa</h1>
+    <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
+    
+    <div style="border: 2px dashed #ffd700; padding: 10px; border-radius: 10px; margin: 10px 0;">
+        <p style="font-size: 0.7em; margin: 0; color: #aaa;">ID MABAR KAMU</p>
+        <h2 id="my-id" style="margin: 5px 0; letter-spacing: 5px; color: #ffd700;">----</h2>
+    </div>
+
+    <input type="number" id="joinId" placeholder="Input ID Teman" style="text-align: center;">
+    <button onclick="gabungMabar()" style="background: #22c55e;">Gabung Mabar</button>
+    <hr style="opacity: 0.2; margin: 15px 0;">
+    <button onclick="startGame()" style="background: #a855f7; font-size: 1.2em;">MAIN SOLO</button>
+</div>
+
 
     <canvas id="gameCanvas"></canvas>
 
