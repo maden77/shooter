@@ -159,32 +159,45 @@
             let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
             bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot Cacing' });
         }
+        // --- KONTROL HALUS & PERLAMBAT ---
+let targetAngle = 0;
 
-        // Kontrol
-        window.addEventListener('mousemove', e => me.a = Math.atan2(e.clientY - me.y, e.clientX - me.x));
-        window.addEventListener('touchstart', e => { 
-            me.a = Math.atan2(e.touches[0].clientY - me.y, e.touches[0].clientX - me.x); 
-        }, {passive: false});
+// Kontrol Mouse
+window.addEventListener('mousemove', e => {
+    targetAngle = Math.atan2(e.clientY - me.y, e.clientX - me.x);
+});
 
-        function drawSnake(p, c, n, isKing) {
-            if(!p || p.length === 0) return;
-            ctx.strokeStyle = c;
-            ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            ctx.beginPath();
-            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
-            ctx.stroke();
-            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
-            ctx.fillText(n, p[0].x - 20, p[0].y - 25);
-        }
+// Kontrol Sentuh (Touch/Swipe) - Anti Scroll & Lebih Lambat
+const handleTouch = (e) => {
+    if (e.touches.length > 0) {
+        e.preventDefault(); // Kunci layar agar tidak goyang
+        const touch = e.touches[0];
+        targetAngle = Math.atan2(touch.clientY - me.y, touch.clientX - me.x);
+    }
+};
 
-        function loop() {
-            if(!play) return;
-            ctx.fillStyle = '#050515'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+window.addEventListener('touchstart', handleTouch, { passive: false });
+window.addEventListener('touchmove', handleTouch, { passive: false });
 
-            // Pergerakan Saya
-            me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
-            me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
-            me.p.unshift({x: me.x, y: me.y}); me.p.pop();
+// --- LOGIKA DI DALAM FUNCTION LOOP() ---
+function loop() {
+    if(!play) return;
+    ctx.fillStyle = '#050515'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 1. LERPING SUDUT: Membuat belokan cacing jadi halus (tidak patah-patah)
+    let diff = targetAngle - me.a;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    me.a += diff * 0.1; // Angka 0.1 ini adalah kehalusan belokan (0.05 lebih halus lagi)
+
+    // 2. KECEPATAN: Diperlambat (me.speed saya set 1.8 di bawah)
+    me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
+    me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
+    
+    me.p.unshift({x: me.x, y: me.y}); 
+    me.p.pop();
+
+        
 
             // Kirim data ke lawan
             if(conn && conn.open) {
