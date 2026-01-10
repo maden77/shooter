@@ -130,9 +130,14 @@
             if(conn && conn.open) conn.send({ type: 'move', id: myShortId, x: me.x, y: me.y, p: me.p, n: me.n });
 
             // Gambar Makanan
-            ctx.fillStyle = "#ffd700";
-            foods.forEach((f, i) => {
-                ctx.beginPath(); ctx.arc(f.x, f.y, 5, 0, Math.PI*2); ctx.fill();
+       if(fruitImages[f.imgIdx] && fruitImages[f.imgIdx].complete) {
+        ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
+    } else {
+        // Jika gambar belum siap, tetap pakai kuning (cadangan)
+        ctx.fillStyle = "#ffd700";
+        ctx.beginPath(); ctx.arc(f.x, f.y, 7, 0, Math.PI*2); ctx.fill();
+    }
+            
                 if(Math.hypot(me.x - f.x, me.y - f.y) < 20) { foods.splice(i,1); spawnFood(); me.score += 10; document.getElementById('scoreVal').innerText = me.score; me.p.push({...me.p[me.p.length-1]}); }
             });
 
