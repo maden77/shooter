@@ -2,303 +2,216 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Egg Shooter Game</title>
+    <title>Cacing Berkuasa - Arena Mabar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#a855f7">
-    
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
-  // Tambahkan variabel di bagian atas script
-let powerUp = null;
-const peer = new Peer();
-
-// Menampilkan ID kita sendiri
-peer.on('open', (id) => {
-    document.getElementById('my-id').innerText = id;
-});
-
-// Fungsi untuk membuat Hadiah Spesial (Cacing Berkuasa)
-function spawnSpecialFood() {
-    if (Math.random() > 0.8) { // 20% peluang muncul makanan spesial
-        powerUp = {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            type: 'KING_SPEED',
-            color: '#ffd700' // Warna Emas
-        };
-    }
-}
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <style>
-        body { 
-            background: #050515; 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            color: white; 
-        }
+        body { background: #050515; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
         canvas { display: block; touch-action: none; }
-
-        /* UI Containers */
+        
         #setup, #gameover { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: rgba(10, 10, 30, 0.95); 
-            padding: 25px; 
-            border-radius: 20px; 
-            border: 2px solid #a855f7; 
-            text-align: center; 
-            width: 80%; 
-            max-width: 300px; 
-            z-index: 100; 
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: rgba(10, 10, 30, 0.95); padding: 25px; border-radius: 20px; 
+            border: 2px solid #a855f7; text-align: center; width: 280px; z-index: 100;
         }
 
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 10px; border: none; outline: none; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; }
+        
+        #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; }
         .hidden { display: none !important; }
-
-        input { 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: 1px solid #a855f7; 
-            background: #1a1a3a; 
-            color: white; 
-            width: 80%; 
-            margin-bottom: 15px;
-            outline: none;
-        }
-
-        button { 
-            padding: 12px 25px; 
-            background: #a855f7; 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover { background: #9333ea; }
-
-        /* PWA Install Banner */
-        #install-prompt {
-            position: fixed; 
-            bottom: 20px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            background: #a855f7; 
-            padding: 15px; 
-            border-radius: 12px;
-            z-index: 2000; 
-            text-align: center; 
-            width: 85%; 
-            max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        #scoreBox {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #FFD700;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            pointer-events: none;
-        }
+        #my-id { color: #ffd700; font-weight: bold; font-size: 0.8em; word-break: break-all; }
     </style>
 </head>
 <body>
 
-    <div id="scoreBox">Score: <span id="scoreVal">0</span></div>
+    <div id="scoreBox">Skor: <span id="scoreVal">0</span></div>
 
     <div id="setup">
-        <h2 style="color: #FFD700;">Egg Shooter</h2>
-        <input type="text" id="nick" placeholder="Nama Kamu" maxlength="10">
-        <button onclick="startGame()">MAIN SEKARANG</button>
+        <h1 style="color: #a855f7; margin: 0;">Cacing Berkuasa</h1>
+        <p style="font-size: 0.7em; opacity: 0.8;">Versi Upgrade: Suara + Mabar</p>
+        
+        <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
+        
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin: 10px 0;">
+            <p style="font-size: 0.7em; margin: 0;">ID Mabar Kamu:</p>
+            <p id="my-id">Menghubungkan...</p>
+            <input type="text" id="joinId" placeholder="ID Teman">
+            <button onclick="gabungMabar()" style="background: #22c55e; padding: 5px; font-size: 0.8em;">Gabung Teman</button>
+        </div>
+
+        <button onclick="startGame()" style="background: #a855f7;">Main Sekarang</button>
     </div>
 
     <div id="gameover" class="hidden">
-        <h2 style="color: #ff4444;">GAME OVER</h2>
+        <h2 style="color: #ef4444;">GAME OVER</h2>
         <p id="finalScore"></p>
-        <button onclick="location.reload()">COBA LAGI</button>
-    </div>
-
-    <div id="install-prompt" class="hidden">
-        <p style="margin: 0 0 10px 0;">Install <b>Egg Shooter</b> di layar utama agar lebih ringan!</p>
-        <button id="install-btn" style="background: white; color: #a855f7;">INSTALL</button>
-        <button id="dismiss-install" style="background: transparent; color: white; border: none; margin-left: 10px;">Nanti</button>
+        <button onclick="location.reload()" style="background: #3b82f6;">Main Lagi</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
-
-    <script src="pwa.js"></script>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let play = false;
 
-        // Atur ukuran canvas
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        // --- SISTEM SUARA ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
 
-        // Data Pemain
-        let me = { 
-            x: canvas.width/2, 
-            y: canvas.height/2, 
-            p: [], 
-            a: 0, 
-            score: 0, 
-            n: "Player", 
-            c: "#a855f7" 
-        };
-        
+            if (type === 'makan') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'powerup') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'mati') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            }
+        }
+
+        // --- MULTIPLAYER ---
+        const peer = new Peer();
+        let conn;
+        peer.on('open', id => document.getElementById('my-id').innerText = id);
+        peer.on('connection', c => {
+            conn = c;
+            alert("Teman bergabung!");
+            if(!play) startGame();
+        });
+
+        function gabungMabar() {
+            const tid = document.getElementById('joinId').value;
+            if(tid) {
+                conn = peer.connect(tid);
+                conn.on('open', () => { alert("Terhubung!"); startGame(); });
+            }
+        }
+
+        // --- DATA GAME ---
+        let me = { x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 2.5, king: false };
         let foods = [];
+        let specialFood = null;
         let bots = [];
         const fruitImages = [];
-        const fruitSources = [
-            'https://cdn-icons-png.flaticon.com/512/528/528076.png', // Egg icon
-            'https://cdn-icons-png.flaticon.com/512/2909/2909808.png' // Other icon
+        const fruitUrls = [
+            'https://cdn-icons-png.flaticon.com/512/415/415733.png',
+            'https://cdn-icons-png.flaticon.com/512/1792/1792812.png',
+            'https://cdn-icons-png.flaticon.com/512/2909/2909787.png'
         ];
 
-        // Load Gambar
-        fruitSources.forEach(src => {
+        fruitUrls.forEach(url => {
             const img = new Image();
-            img.src = src;
+            img.src = url;
             fruitImages.push(img);
         });
 
         function startGame() {
-            const nickInput = document.getElementById('nick').value;
-            if(nickInput) me.n = nickInput;
+            me.n = document.getElementById('nameInput').value || "Cacing";
             document.getElementById('setup').classList.add('hidden');
-            
-            // Inisialisasi awal
-            me.p = Array(10).fill({x: me.x, y: me.y});
-            for(let i=0; i<15; i++) spawnFood();
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            me.x = canvas.width/2; me.y = canvas.height/2;
+            for(let i=0; i<15; i++) me.p.push({x: me.x, y: me.y});
+            for(let i=0; i<20; i++) spawnFood();
             for(let i=0; i<3; i++) spawnBot();
-            
             play = true;
+            loop();
         }
 
         function spawnFood() {
-            foods.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                imgIdx: Math.floor(Math.random() * fruitImages.length)
-            });
+            foods.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, imgIdx: Math.floor(Math.random()*3) });
         }
 
         function spawnBot() {
-            bots.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                a: Math.random() * Math.PI * 2,
-                p: Array(10).fill({x: 0, y: 0}),
-                c: '#ff4444',
-                n: "Bot Egg"
-            });
+            let bx = Math.random()*canvas.width, by = Math.random()*canvas.height;
+            let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
+            bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot Cacing' });
         }
 
-        function drawSnake(p, color, name) {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 15;
-            ctx.lineCap = 'round';
+        window.addEventListener('mousemove', e => me.a = Math.atan2(e.clientY - me.y, e.clientX - me.x));
+        window.addEventListener('touchstart', e => { me.a = Math.atan2(e.touches[0].clientY - me.y, e.touches[0].clientX - me.x); });
+
+        function drawSnake(p, c, n, isKing) {
+            ctx.strokeStyle = isKing ? '#ffd700' : c;
+            ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            if(isKing) { ctx.shadowBlur = 15; ctx.shadowColor = "gold"; }
             ctx.beginPath();
-            p.forEach((pt, i) => {
-                if(i === 0) ctx.moveTo(pt.x, pt.y);
-                else ctx.lineTo(pt.x, pt.y);
-            });
-            ctx.stroke();
-            ctx.fillStyle = "white";
-            ctx.fillText(name, p[0].x - 10, p[0].y - 15);
+            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+            ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
+            ctx.fillText(n + (isKing ? " 👑" : ""), p[0].x - 20, p[0].y - 25);
         }
-
-        // Kontrol Mouse/Touch
-        canvas.addEventListener('mousemove', e => {
-            if(!play) return;
-            me.a = Math.atan2(e.clientY - me.y, e.clientX - me.x);
-        });
-
-        canvas.addEventListener('touchmove', e => {
-            if(!play) return;
-            const touch = e.touches[0];
-            me.a = Math.atan2(touch.clientY - me.y, touch.clientX - me.x);
-        }, {passive: false});
 
         function loop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            if(play) {
-                // Update Posisi Player
-                me.x = (me.x + Math.cos(me.a) * 3 + canvas.width) % canvas.width;
-                me.y = (me.y + Math.sin(me.a) * 3 + canvas.height) % canvas.height;
-                me.p.unshift({x: me.x, y: me.y});
-                me.p.pop();
-     
-            // Tambahkan di dalam fungsi update()
-if (powerUp && Math.hypot(me.x - powerUp.x, me.y - powerUp.y) < 20) {
-    // EFEK HADIAH: Kecepatan meningkat & HP Bergetar
-    me.speed = 6;
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
-    
-    powerUp = null;
-    alert("KAMU JADI CACING BERKUASA! (Speed Boost 5dtk)");
-    
-    setTimeout(() => { me.speed = 2.5; }, 5000);
-}
+            if(!play) return;
+            ctx.fillStyle = '#050515'; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Cek makan
-                foods.forEach((f, i) => {
-                    if(Math.hypot(me.x - f.x, me.y - f.y) < 20) {
-                        foods.splice(i, 1);
-                        spawnFood();
-                        me.score += 10;
-                        document.getElementById('scoreVal').innerText = me.score;
-                        me.p.push({...me.p[me.p.length-1]}); // Tambah panjang
-                    }
-                });
+            me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
+            me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
+            me.p.unshift({x: me.x, y: me.y}); me.p.pop();
 
-                // Bot Logic & Render
-                bots.forEach(b => {
-                    b.a += (Math.random() - 0.5) * 0.2;
-                    b.x = (b.p[0].x + Math.cos(b.a) * 2.5 + canvas.width) % canvas.width;
-                    b.y = (b.p[0].y + Math.sin(b.a) * 2.5 + canvas.height) % canvas.height;
-                    b.p.unshift({x: b.x, y: b.y});
-                    b.p.pop();
-                    drawSnake(b.p, b.c, b.n);
-
-                    // Tabrakan dengan Bot
-                    if(Math.hypot(me.x - b.x, me.y - b.y) < 15) {
-                        play = false;
-                        document.getElementById('gameover').classList.remove('hidden');
-                        document.getElementById('finalScore').innerText = "Skor Akhir: " + me.score;
-                    }
-                });
-
-                drawSnake(me.p, me.c, me.n);
-            }
-
-            // Render Makanan
-            foods.forEach(f => {
-                if(fruitImages[f.imgIdx].complete) {
-                    ctx.drawImage(fruitImages[f.imgIdx], f.x-10, f.y-10, 20, 20);
+            // Makanan
+            foods.forEach((f, i) => {
+                if(fruitImages[f.imgIdx].complete) ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
+                if(Math.hypot(me.x - f.x, me.y - f.y) < 25) {
+                    foods.splice(i, 1); spawnFood(); playSound('makan');
+                    me.score += 10; document.getElementById('scoreVal').innerText = me.score;
+                    me.p.push({...me.p[me.p.length-1]});
+                    if(navigator.vibrate) navigator.vibrate(20);
                 }
             });
 
+            // Hadiah Spesial
+            if(specialFood) {
+                ctx.fillStyle = 'gold'; ctx.shadowBlur = 20; ctx.shadowColor = "gold";
+                ctx.beginPath(); ctx.arc(specialFood.x, specialFood.y, 12, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+                if(Math.hypot(me.x - specialFood.x, me.y - specialFood.y) < 30) {
+                    specialFood = null; me.speed = 5.5; me.king = true; playSound('powerup');
+                    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    setTimeout(() => { me.speed = 2.5; me.king = false; }, 8000);
+                }
+            } else if(Math.random() > 0.998) {
+                specialFood = { x: Math.random()*canvas.width, y: Math.random()*canvas.height };
+            }
+
+            // Bot & Tabrakan
+            bots.forEach(b => {
+                b.a += (Math.random() - 0.5) * 0.2;
+                b.x = (b.x + Math.cos(b.a) * 2 + canvas.width) % canvas.width;
+                b.y = (b.y + Math.sin(b.a) * 2 + canvas.height) % canvas.height;
+                b.p.unshift({x: b.x, y: b.y}); b.p.pop();
+                drawSnake(b.p, b.c, b.n, false);
+                if(Math.hypot(me.x - b.x, me.y - b.y) < 20) {
+                    play = false; playSound('mati');
+                    document.getElementById('gameover').classList.remove('hidden');
+                    document.getElementById('finalScore').innerText = "Skor: " + me.score;
+                    if(navigator.vibrate) navigator.vibrate(400);
+                }
+            });
+
+            drawSnake(me.p, me.c, me.n, me.king);
             requestAnimationFrame(loop);
         }
-
-        loop();
     </script>
+    <script src="pwa.js"></script>
 </body>
 </html>
