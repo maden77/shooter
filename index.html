@@ -77,30 +77,45 @@
                 osc.start(); osc.stop(audioCtx.currentTime + 0.4);
             }
         }
+   // --- PEERJS DENGAN PENANGANAN ERROR ---
+let myShortId = Math.floor(1000 + Math.random() * 9000).toString();
+let peer;
 
-        // --- PEERJS ---
-        const myShortId = Math.floor(1000 + Math.random() * 9000).toString();
-        const peer = new Peer(myShortId);
+function initPeer() {
+    // Membuat instance PeerJS
+    peer = new Peer(myShortId, {
+        debug: 1 // Mengurangi log agar lebih ringan
+    });
 
-        peer.on('open', id => { document.getElementById('my-id').innerText = id; });
-        peer.on('connection', c => {
-            conn = c;
-            setupConnection();
-            alert("Teman bergabung!");
-            if(!play) startGame();
-        });
+    peer.on('open', id => {
+        console.log('ID Saya:', id);
+        document.getElementById('my-id').innerText = id;
+    });
 
-        function gabungMabar() {
-            const tid = document.getElementById('joinId').value;
-            if(tid) {
-                conn = peer.connect(tid);
-                conn.on('open', () => {
-                    setupConnection();
-                    alert("Terhubung!");
-                    startGame();
-                });
-            }
+    peer.on('connection', c => {
+        conn = c;
+        setupConnection();
+        alert("Teman bergabung!");
+        if(!play) startGame();
+    });
+
+    // Jika ID 4-digit sudah ada yang pakai, buat ID baru otomatis
+    peer.on('error', err => {
+        if (err.type === 'unavailable-id') {
+            myShortId = Math.floor(1000 + Math.random() * 9000).toString();
+            initPeer(); // Coba lagi dengan ID baru
+        } else {
+            console.error('PeerJS Error:', err);
+            document.getElementById('my-id').innerText = "Error Koneksi";
         }
+    });
+}
+
+// Jalankan inisialisasi
+initPeer();
+
+
+       
 
         function setupConnection() {
             conn.on('data', data => { if(data.type === 'move') opponents[data.id] = data; });
