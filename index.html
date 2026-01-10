@@ -6,27 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#a855f7">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
-
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
     <style>
         body { background: #050515; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
-        canvas { display: block; touch-action: none; }
-
+        canvas { display: block; touch-action: none; -webkit-tap-highlight-color: transparent; }
         #setup, #gameover { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(10, 10, 30, 0.95); padding: 25px; border-radius: 20px; 
-            border: 2px solid #a855f7; text-align: center; width: 300px; z-index: 100;
+            border: 2px solid #a855f7; text-align: center; width: 280px; z-index: 100;
             box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
         }
-
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; outline: none; box-sizing: border-box; background: #1a1a3a; color: white; border: 1px solid #333; }
-        button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; transition: 0.2s; }
-        button:active { transform: scale(0.95); }
-
+        button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; }
         #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; text-shadow: 2px 2px #000; }
         .hidden { display: none !important; }
-        
         .id-badge { border: 2px dashed #ffd700; padding: 10px; border-radius: 10px; margin: 10px 0; }
         #my-id { margin: 5px 0; letter-spacing: 5px; color: #ffd700; font-size: 1.5em; }
     </style>
@@ -36,26 +29,21 @@
     <div id="scoreBox">Skor: <span id="scoreVal">0</span></div>
 
     <div id="setup">
-        <h1 style="color: #a855f7; margin-bottom: 5px;">Cacing Berkuasa</h1>
-        <p style="font-size: 0.8em; margin-bottom: 20px; opacity: 0.7;">Solo & Multiplayer Arena</p>
-
+        <h1 style="color: #a855f7; margin: 0;">Cacing Berkuasa</h1>
+        <p style="font-size: 0.8em; opacity: 0.7;">Arena Solo & Mabar</p>
         <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
-
         <div class="id-badge">
             <p style="font-size: 0.7em; margin: 0; color: #aaa;">ID MABAR KAMU</p>
-            <h2 id="my-id">----</h2>
+            <h2 id="my-id">Memuat...</h2>
         </div>
-
-        <input type="number" id="joinId" placeholder="Input 4 Digit ID Teman" style="text-align: center;">
+        <input type="number" id="joinId" placeholder="ID Teman (4 Digit)">
         <button onclick="gabungMabar()" style="background: #22c55e;">GABUNG MABAR</button>
-        
         <hr style="opacity: 0.1; margin: 15px 0;">
-        
         <button onclick="startGame()" style="background: #a855f7; font-size: 1.1em;">MAIN SOLO</button>
     </div>
 
     <div id="gameover" class="hidden">
-        <h2 style="color: #ef4444;">MATI DEH!</h2>
+        <h2 style="color: #ef4444;">GAME OVER</h2>
         <p id="finalScore"></p>
         <button onclick="location.reload()" style="background: #3b82f6;">MAIN LAGI</button>
     </div>
@@ -68,6 +56,7 @@
         let play = false;
         let conn; 
         let opponents = {};
+        let targetAngle = 0;
 
         // --- SISTEM SUARA ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -79,7 +68,7 @@
             if (type === 'makan') {
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.1);
             } else if (type === 'mati') {
                 osc.type = 'sawtooth';
@@ -89,14 +78,11 @@
             }
         }
 
-        // --- SISTEM MULTIPLAYER (PEERJS) ---
+        // --- PEERJS ---
         const myShortId = Math.floor(1000 + Math.random() * 9000).toString();
         const peer = new Peer(myShortId);
 
-        peer.on('open', id => {
-            document.getElementById('my-id').innerText = id;
-        });
-
+        peer.on('open', id => { document.getElementById('my-id').innerText = id; });
         peer.on('connection', c => {
             conn = c;
             setupConnection();
@@ -110,22 +96,18 @@
                 conn = peer.connect(tid);
                 conn.on('open', () => {
                     setupConnection();
-                    alert("Terhubung ke teman!");
+                    alert("Terhubung!");
                     startGame();
                 });
             }
         }
 
         function setupConnection() {
-            conn.on('data', data => {
-                if(data.type === 'move') {
-                    opponents[data.id] = data;
-                }
-            });
+            conn.on('data', data => { if(data.type === 'move') opponents[data.id] = data; });
         }
 
         // --- DATA GAME ---
-        let me = { id: myShortId, x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 1.5, king: false };
+        let me = { id: myShortId, x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 2, king: false };
         let foods = [];
         let bots = [];
         const fruitUrls = [
@@ -141,11 +123,10 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             me.x = canvas.width/2; me.y = canvas.height/2;
-            
+            me.p = [];
             for(let i=0; i<15; i++) me.p.push({x: me.x, y: me.y});
             for(let i=0; i<25; i++) spawnFood();
-            for(let i=0; i<1.5; i++) spawnBot();
-            
+            for(let i=0; i<3; i++) spawnBot();
             play = true;
             loop();
         }
@@ -157,141 +138,45 @@
         function spawnBot() {
             let bx = Math.random()*canvas.width, by = Math.random()*canvas.height;
             let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
-            bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot Cacing' });
+            bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot' });
         }
-      // --- OPTIMASI KONTROL ANDROID ---
-let targetAngle = 0;
-let isTouching = false;
 
-// Fungsi Inti Navigasi
-function updateDirection(inputX, inputY) {
-    // Menghitung sudut antara posisi kepala cacing dan posisi jari/mouse
-    targetAngle = Math.atan2(inputY - me.y, inputX - me.x);
-}
+        // --- KONTROL ---
+        const handleInput = (ex, ey) => { targetAngle = Math.atan2(ey - me.y, ex - me.x); };
+        window.addEventListener('mousemove', e => handleInput(e.clientX, e.clientY));
+        window.addEventListener('touchmove', e => {
+            e.preventDefault();
+            handleInput(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
 
-// Mouse
-window.addEventListener('mousemove', e => updateDirection(e.clientX, e.clientY));
-
-// Touch (Dibuat sangat sensitif untuk Android)
-canvas.addEventListener('touchstart', e => {
-    isTouching = true;
-    updateDirection(e.touches[0].clientX, e.touches[0].clientY);
-}, { passive: false });
-
-canvas.addEventListener('touchmove', e => {
-    e.preventDefault(); // Kunci layar agar tidak scrolling
-    if(isTouching) {
-        updateDirection(e.touches[0].clientX, e.touches[0].clientY);
-    }
-}, { passive: false });
-
-window.addEventListener('touchend', () => isTouching = false);
-
-        // --- KONTROL HALUS & PERLAMBAT ---
-let targetAngle = 0;
-
-// Kontrol Mouse
-window.addEventListener('mousemove', e => {
-    targetAngle = Math.atan2(e.clientY - me.y, e.clientX - me.x);
-});
-
-// Kontrol Sentuh (Touch/Swipe) - Anti Scroll & Lebih Lambat
-const handleTouch = (e) => {
-    if (e.touches.length > 0) {
-        e.preventDefault(); // Kunci layar agar tidak goyang
-        const touch = e.touches[0];
-        targetAngle = Math.atan2(touch.clientY - me.y, touch.clientX - me.x);
-    }
-};
-
-window.addEventListener('touchstart', handleTouch, { passive: false });
-window.addEventListener('touchmove', handleTouch, { passive: false });
-
-    function loop() {
-    if(!play) return;
-
-    // 1. PEMBERSIHAN LAYAR (High Performance)
-    // Menggunakan clearRect sebelum fillRect membantu beberapa GPU mobile bekerja lebih ringan
-    ctx.clearRect(0, 0, canvas.width, canvas.height); 
-    ctx.fillStyle = '#050515'; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 2. LOGIKA PERGERAKAN (Lerping Responsif)
-    // Menghitung selisih sudut antara cacing dan posisi jari
-    let diff = targetAngle - me.a;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    
-    // Angka 0.2: Keseimbangan antara kehalusan dan kecepatan respon jari
-    me.a += diff * 0.2; 
-
-    // 3. UPDATE POSISI (Kecepatan Stabil)
-    me.speed = 2.0; // Kecepatan ideal untuk layar Android agar tidak terlalu liar
-    me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
-    me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
-    
-    // Update array badan (koordinat kepala baru masuk ke index 0)
-    me.p.unshift({x: me.x, y: me.y}); 
-    me.p.pop();
-
-    // 4. MULTIPLAYER: Kirim data posisi ke teman
-    if(conn && conn.open) {
-        conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n, king: me.king });
-    }
-
-    // 5. RENDERING MAKANAN
-    foods.forEach((f, i) => {
-        if(fruitImages[f.imgIdx].complete) {
-            ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
+        function drawSnake(p, c, n) {
+            if(!p.length) return;
+            ctx.strokeStyle = c; ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath();
+            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+            ctx.stroke();
+            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
+            ctx.fillText(n, p[0].x - 15, p[0].y - 25);
         }
-        // Cek tabrakan makanan (Collision)
-        if(Math.hypot(me.x - f.x, me.y - f.y) < 25) {
-            foods.splice(i, 1); 
-            spawnFood(); 
-            playSound('makan');
-            me.score += 10; 
-            document.getElementById('scoreVal').innerText = me.score;
-            me.p.push({...me.p[me.p.length-1]}); // Badan bertambah panjang
-            if(navigator.vibrate) navigator.vibrate(15);
-        }
-    });
 
-    // 6. RENDERING BOT & TABRAKAN
-    bots.forEach(b => {
-        b.a += (Math.random() - 0.5) * 0.2;
-        b.x = (b.x + Math.cos(b.a) * 1.5 + canvas.width) % canvas.width;
-        b.y = (b.y + Math.sin(b.a) * 1.5 + canvas.height) % canvas.height;
-        b.p.unshift({x: b.x, y: b.y}); b.p.pop();
-        drawSnake(b.p, b.c, b.n, false);
-        
-        if(Math.hypot(me.x - b.x, me.y - b.y) < 20) {
-            gameOver();
-        }
-    });
+        function loop() {
+            if(!play) return;
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            ctx.fillStyle = '#050515'; ctx.fillRect(0,0,canvas.width, canvas.height);
 
-    // 7. RENDERING LAWAN (MABAR)
-    Object.values(opponents).forEach(opp => {
-        drawSnake(opp.p, '#22c55e', opp.n, opp.king);
-        if(Math.hypot(me.x - opp.x, me.y - opp.y) < 20) {
-            gameOver();
-        }
-    });
+            // Pergerakan Halus (Lerp)
+            let diff = targetAngle - me.a;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            me.a += diff * 0.15;
 
-    // 8. GAMBAR CACING SENDIRI (Paling atas)
-    drawSnake(me.p, me.c, me.n, me.king);
+            me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
+            me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
+            me.p.unshift({x: me.x, y: me.y}); me.p.pop();
 
-    // Jalankan frame berikutnya
-    requestAnimationFrame(loop);
-}
+            if(conn && conn.open) conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n });
 
-        
-
-            // Kirim data ke lawan
-            if(conn && conn.open) {
-                conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n });
-            }
-
-            // Gambar Makanan
+            // Makanan
             foods.forEach((f, i) => {
                 if(fruitImages[f.imgIdx].complete) ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
                 if(Math.hypot(me.x - f.x, me.y - f.y) < 25) {
@@ -301,35 +186,32 @@ window.addEventListener('touchmove', handleTouch, { passive: false });
                 }
             });
 
-            // Gambar Bot
+            // Bot
             bots.forEach(b => {
                 b.a += (Math.random() - 0.5) * 0.2;
-                b.x = (b.x + Math.cos(b.a) * 2 + canvas.width) % canvas.width;
-                b.y = (b.y + Math.sin(b.a) * 2 + canvas.height) % canvas.height;
+                b.x = (b.x + Math.cos(b.a) * 1.5 + canvas.width) % canvas.width;
+                b.y = (b.y + Math.sin(b.a) * 1.5 + canvas.height) % canvas.height;
                 b.p.unshift({x: b.x, y: b.y}); b.p.pop();
-                drawSnake(b.p, b.c, b.n, false);
-                // Cek Tabrakan dengan Bot
-                if(Math.hypot(me.x - b.x, me.y - b.y) < 20) {
-                    gameOver();
-                }
+                drawSnake(b.p, b.c, b.n);
+                if(Math.hypot(me.x - b.x, me.y - b.y) < 20) gameOver();
             });
 
-            // Gambar Lawan
+            // Lawan Mabar
             Object.values(opponents).forEach(opp => {
-                drawSnake(opp.p, '#22c55e', opp.n, false);
+                drawSnake(opp.p, '#22c55e', opp.n);
                 if(Math.hypot(me.x - opp.x, me.y - opp.y) < 20) gameOver();
             });
 
-            drawSnake(me.p, me.c, me.n, me.king);
+            drawSnake(me.p, me.c, me.n);
             requestAnimationFrame(loop);
         }
 
         function gameOver() {
-            play = false;
-            playSound('mati');
+            if(!play) return;
+            play = false; playSound('mati');
             document.getElementById('gameover').classList.remove('hidden');
-            document.getElementById('finalScore').innerText = "Skor Akhir: " + me.score;
-            if(navigator.vibrate) navigator.vibrate(400);
+            document.getElementById('finalScore').innerText = "Skor: " + me.score;
+            if(navigator.vibrate) navigator.vibrate(200);
         }
     </script>
 </body>
