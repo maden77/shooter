@@ -159,6 +159,34 @@
             let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
             bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot Cacing' });
         }
+      // --- OPTIMASI KONTROL ANDROID ---
+let targetAngle = 0;
+let isTouching = false;
+
+// Fungsi Inti Navigasi
+function updateDirection(inputX, inputY) {
+    // Menghitung sudut antara posisi kepala cacing dan posisi jari/mouse
+    targetAngle = Math.atan2(inputY - me.y, inputX - me.x);
+}
+
+// Mouse
+window.addEventListener('mousemove', e => updateDirection(e.clientX, e.clientY));
+
+// Touch (Dibuat sangat sensitif untuk Android)
+canvas.addEventListener('touchstart', e => {
+    isTouching = true;
+    updateDirection(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); // Kunci layar agar tidak scrolling
+    if(isTouching) {
+        updateDirection(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', () => isTouching = false);
+
         // --- KONTROL HALUS & PERLAMBAT ---
 let targetAngle = 0;
 
@@ -179,23 +207,82 @@ const handleTouch = (e) => {
 window.addEventListener('touchstart', handleTouch, { passive: false });
 window.addEventListener('touchmove', handleTouch, { passive: false });
 
-// --- LOGIKA DI DALAM FUNCTION LOOP() ---
-function loop() {
+    function loop() {
     if(!play) return;
-    ctx.fillStyle = '#050515'; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 1. LERPING SUDUT: Membuat belokan cacing jadi halus (tidak patah-patah)
+    // 1. PEMBERSIHAN LAYAR (High Performance)
+    // Menggunakan clearRect sebelum fillRect membantu beberapa GPU mobile bekerja lebih ringan
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    ctx.fillStyle = '#050515'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. LOGIKA PERGERAKAN (Lerping Responsif)
+    // Menghitung selisih sudut antara cacing dan posisi jari
     let diff = targetAngle - me.a;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
-    me.a += diff * 0.1; // Angka 0.1 ini adalah kehalusan belokan (0.05 lebih halus lagi)
+    
+    // Angka 0.2: Keseimbangan antara kehalusan dan kecepatan respon jari
+    me.a += diff * 0.2; 
 
-    // 2. KECEPATAN: Diperlambat (me.speed saya set 1.8 di bawah)
+    // 3. UPDATE POSISI (Kecepatan Stabil)
+    me.speed = 2.0; // Kecepatan ideal untuk layar Android agar tidak terlalu liar
     me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
     me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
     
+    // Update array badan (koordinat kepala baru masuk ke index 0)
     me.p.unshift({x: me.x, y: me.y}); 
     me.p.pop();
+
+    // 4. MULTIPLAYER: Kirim data posisi ke teman
+    if(conn && conn.open) {
+        conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n, king: me.king });
+    }
+
+    // 5. RENDERING MAKANAN
+    foods.forEach((f, i) => {
+        if(fruitImages[f.imgIdx].complete) {
+            ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
+        }
+        // Cek tabrakan makanan (Collision)
+        if(Math.hypot(me.x - f.x, me.y - f.y) < 25) {
+            foods.splice(i, 1); 
+            spawnFood(); 
+            playSound('makan');
+            me.score += 10; 
+            document.getElementById('scoreVal').innerText = me.score;
+            me.p.push({...me.p[me.p.length-1]}); // Badan bertambah panjang
+            if(navigator.vibrate) navigator.vibrate(15);
+        }
+    });
+
+    // 6. RENDERING BOT & TABRAKAN
+    bots.forEach(b => {
+        b.a += (Math.random() - 0.5) * 0.2;
+        b.x = (b.x + Math.cos(b.a) * 1.5 + canvas.width) % canvas.width;
+        b.y = (b.y + Math.sin(b.a) * 1.5 + canvas.height) % canvas.height;
+        b.p.unshift({x: b.x, y: b.y}); b.p.pop();
+        drawSnake(b.p, b.c, b.n, false);
+        
+        if(Math.hypot(me.x - b.x, me.y - b.y) < 20) {
+            gameOver();
+        }
+    });
+
+    // 7. RENDERING LAWAN (MABAR)
+    Object.values(opponents).forEach(opp => {
+        drawSnake(opp.p, '#22c55e', opp.n, opp.king);
+        if(Math.hypot(me.x - opp.x, me.y - opp.y) < 20) {
+            gameOver();
+        }
+    });
+
+    // 8. GAMBAR CACING SENDIRI (Paling atas)
+    drawSnake(me.p, me.c, me.n, me.king);
+
+    // Jalankan frame berikutnya
+    requestAnimationFrame(loop);
+}
 
         
 
