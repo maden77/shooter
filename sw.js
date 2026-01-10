@@ -1,4 +1,4 @@
-const CACHE_NAME = 'egg-shooter-v1';
+const CACHE_NAME = 'cacing-2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
