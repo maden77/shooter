@@ -8,6 +8,26 @@
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
+  // Tambahkan variabel di bagian atas script
+let powerUp = null;
+const peer = new Peer();
+
+// Menampilkan ID kita sendiri
+peer.on('open', (id) => {
+    document.getElementById('my-id').innerText = id;
+});
+
+// Fungsi untuk membuat Hadiah Spesial (Cacing Berkuasa)
+function spawnSpecialFood() {
+    if (Math.random() > 0.8) { // 20% peluang muncul makanan spesial
+        powerUp = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            type: 'KING_SPEED',
+            color: '#ffd700' // Warna Emas
+        };
+    }
+}
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -224,6 +244,18 @@
                 me.y = (me.y + Math.sin(me.a) * 3 + canvas.height) % canvas.height;
                 me.p.unshift({x: me.x, y: me.y});
                 me.p.pop();
+     
+            // Tambahkan di dalam fungsi update()
+if (powerUp && Math.hypot(me.x - powerUp.x, me.y - powerUp.y) < 20) {
+    // EFEK HADIAH: Kecepatan meningkat & HP Bergetar
+    me.speed = 6;
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+    
+    powerUp = null;
+    alert("KAMU JADI CACING BERKUASA! (Speed Boost 5dtk)");
+    
+    setTimeout(() => { me.speed = 2.5; }, 5000);
+}
 
                 // Cek makan
                 foods.forEach((f, i) => {
