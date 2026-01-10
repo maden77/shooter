@@ -5,19 +5,10 @@ const CACHE_NAME = 'egg-shooter-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css',
-  './script.js',
   './pwa.js',
   './manifest.json',
   'https://cdn-icons-png.flaticon.com/512/528/528076.png',
-  // Audio files
-  'https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3',
-  'https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3',
-  'https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-up-3004.mp3',
-  'https://assets.mixkit.co/sfx/preview/mixkit-bomb-explosion-in-battle-2800.mp3',
-  'https://assets.mixkit.co/sfx/preview/mixkit-game-over-tetris-2047.mp3',
-  'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'
-];
+ 
 
 // Install event
 self.addEventListener('install', event => {
