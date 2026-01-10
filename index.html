@@ -5,9 +5,7 @@
     <title>Cacing Berkuasa - Arena Mabar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#a855f7">
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/528/528076.png">
-
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 
     <style>
         body { background: #050515; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
@@ -15,11 +13,11 @@
         #setup, #gameover { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(10, 10, 30, 0.95); padding: 25px; border-radius: 20px; 
-            border: 2px solid #a855f7; text-align: center; width: 280px; z-index: 100;
+            border: 2px solid #a855f7; text-align: center; width: 300px; z-index: 100;
         }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; outline: none; box-sizing: border-box; background: #1a1a3a; color: white; border: 1px solid #333; }
         button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; }
-        #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; text-shadow: 2px 2px #000; }
+        #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; }
         .hidden { display: none !important; }
         .id-badge { border: 2px dashed #ffd700; padding: 10px; border-radius: 10px; margin: 10px 0; }
         #my-id { margin: 5px 0; letter-spacing: 5px; color: #ffd700; font-size: 1.5em; }
@@ -30,8 +28,7 @@
     <div id="scoreBox">Skor: <span id="scoreVal">0</span></div>
 
     <div id="setup">
-        <h1 style="color: #a855f7; margin: 0;">Cacing Berkuasa</h1>
-        <p style="font-size: 0.8em; opacity: 0.7;">Arena Solo & Mabar</p>
+        <h2 style="color: #a855f7; margin: 0;">Cacing Berkuasa</h2>
         <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
         <div class="id-badge">
             <p style="font-size: 0.7em; margin: 0; color: #aaa;">ID MABAR KAMU</p>
@@ -39,13 +36,11 @@
         </div>
         <input type="number" id="joinId" placeholder="ID Teman (4 Digit)">
         <button onclick="gabungMabar()" style="background: #22c55e;">GABUNG MABAR</button>
-        <hr style="opacity: 0.1; margin: 15px 0;">
-        <button onclick="startGame()" style="background: #a855f7; font-size: 1.1em;">MAIN SOLO</button>
+        <button onclick="startGame()" style="background: #a855f7; margin-top: 15px;">MAIN SOLO</button>
     </div>
 
     <div id="gameover" class="hidden">
         <h2 style="color: #ef4444;">GAME OVER</h2>
-        <p id="finalScore"></p>
         <button onclick="location.reload()" style="background: #3b82f6;">MAIN LAGI</button>
     </div>
 
@@ -54,73 +49,36 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let play = false;
-        let conn; 
-        let opponents = {};
-        let targetAngle = 0;
+        let play = false, conn, opponents = {}, targetAngle = 0;
 
-        // --- SISTEM SUARA ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            if (type === 'makan') {
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'mati') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-            }
-        }
-
-        // --- SISTEM MULTIPLAYER (PEERJS) ---
+        // --- MULTIPLAYER SETUP ---
         let myShortId = Math.floor(1000 + Math.random() * 9000).toString();
-        let peer;
+        let peer = new Peer(myShortId, {
+            host: '0.peerjs.com', // Memaksa ke server utama
+            port: 443,
+            secure: true
+        });
 
-        function initPeer() {
-            try {
-                peer = new Peer(myShortId);
-
-                peer.on('open', id => {
-                    document.getElementById('my-id').innerText = id;
-                });
-
-                peer.on('connection', c => {
-                    conn = c;
-                    setupConnection();
-                    alert("Teman bergabung!");
-                    if(!play) startGame();
-                });
-
-                peer.on('error', err => {
-                    console.error("PeerJS Error:", err.type);
-                    if (err.type === 'unavailable-id') {
-                        myShortId = Math.floor(1000 + Math.random() * 9000).toString();
-                        initPeer(); 
-                    } else {
-                        document.getElementById('my-id').innerText = "OFFLINE";
-                    }
-                });
-            } catch(e) {
-                document.getElementById('my-id').innerText = "ERROR LIB";
-            }
-        }
+        peer.on('open', id => { document.getElementById('my-id').innerText = id; });
+        peer.on('error', err => { 
+            console.error(err);
+            document.getElementById('my-id').innerText = "RETRYING...";
+            // Coba lagi jika gagal
+            setTimeout(() => location.reload(), 3000);
+        });
+        
+        peer.on('connection', c => {
+            conn = c;
+            setupConnection();
+            alert("Teman bergabung!");
+            if(!play) startGame();
+        });
 
         function gabungMabar() {
             const tid = document.getElementById('joinId').value;
-            if(tid && peer) {
+            if(tid) {
                 conn = peer.connect(tid);
-                conn.on('open', () => {
-                    setupConnection();
-                    alert("Terhubung!");
-                    startGame();
-                });
+                conn.on('open', () => { setupConnection(); alert("Terhubung!"); startGame(); });
             }
         }
 
@@ -128,124 +86,83 @@
             conn.on('data', data => { if(data.type === 'move') opponents[data.id] = data; });
         }
 
-        // --- DATA GAME ---
-        let me = { id: myShortId, x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 2 };
-        let foods = [];
-        let bots = [];
-        const fruitUrls = [
-            'https://cdn-icons-png.flaticon.com/512/415/415733.png',
-            'https://cdn-icons-png.flaticon.com/512/1792/1792812.png',
-            'https://cdn-icons-png.flaticon.com/512/2909/2909787.png'
-        ];
-        const fruitImages = fruitUrls.map(url => { const img = new Image(); img.src = url; return img; });
-
+        // --- GAME LOGIC ---
+        let me = { x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 2 };
+        let foods = [], bots = [];
+        
         function startGame() {
             me.n = document.getElementById('nameInput').value || "Cacing";
             document.getElementById('setup').classList.add('hidden');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             me.x = canvas.width/2; me.y = canvas.height/2;
-            me.p = [];
             for(let i=0; i<15; i++) me.p.push({x: me.x, y: me.y});
             for(let i=0; i<25; i++) spawnFood();
             for(let i=0; i<3; i++) spawnBot();
-            play = true;
-            loop();
+            play = true; loop();
         }
 
-        function spawnFood() {
-            foods.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, imgIdx: Math.floor(Math.random()*3) });
-        }
-
+        function spawnFood() { foods.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height }); }
         function spawnBot() {
             let bx = Math.random()*canvas.width, by = Math.random()*canvas.height;
             let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
             bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot' });
         }
 
-        // --- KONTROL ---
-        const handleInput = (ex, ey) => { targetAngle = Math.atan2(ey - me.y, ex - me.x); };
-        window.addEventListener('mousemove', e => handleInput(e.clientX, e.clientY));
-        window.addEventListener('touchstart', e => handleInput(e.touches[0].clientX, e.touches[0].clientY), {passive:false});
+        // Kontrol Android (Touch)
         window.addEventListener('touchmove', e => {
             e.preventDefault();
-            handleInput(e.touches[0].clientX, e.touches[0].clientY);
+            targetAngle = Math.atan2(e.touches[0].clientY - me.y, e.touches[0].clientX - me.x);
         }, { passive: false });
-
-        function drawSnake(p, c, n) {
-            if(!p || !p.length) return;
-            ctx.strokeStyle = c; ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            ctx.beginPath();
-            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
-            ctx.stroke();
-            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
-            ctx.fillText(n, p[0].x - 15, p[0].y - 25);
-        }
 
         function loop() {
             if(!play) return;
-            ctx.clearRect(0,0,canvas.width, canvas.height);
             ctx.fillStyle = '#050515'; ctx.fillRect(0,0,canvas.width, canvas.height);
 
+            // Pergerakan
             let diff = targetAngle - me.a;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             me.a += diff * 0.15;
-
             me.x = (me.x + Math.cos(me.a) * me.speed + canvas.width) % canvas.width;
             me.y = (me.y + Math.sin(me.a) * me.speed + canvas.height) % canvas.height;
             me.p.unshift({x: me.x, y: me.y}); me.p.pop();
 
-            if(conn && conn.open) conn.send({ type: 'move', id: me.id, x: me.x, y: me.y, p: me.p, n: me.n });
+            if(conn && conn.open) conn.send({ type: 'move', id: myShortId, x: me.x, y: me.y, p: me.p, n: me.n });
 
-            // Makanan
+            // Gambar Makanan
+            ctx.fillStyle = "#ffd700";
             foods.forEach((f, i) => {
-                if(fruitImages[f.imgIdx].complete) ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
-                if(Math.hypot(me.x - f.x, me.y - f.y) < 25) {
-                    foods.splice(i, 1); spawnFood(); playSound('makan');
-                    me.score += 10; document.getElementById('scoreVal').innerText = me.score;
-                    me.p.push({...me.p[me.p.length-1]});
-                }
+                ctx.beginPath(); ctx.arc(f.x, f.y, 5, 0, Math.PI*2); ctx.fill();
+                if(Math.hypot(me.x - f.x, me.y - f.y) < 20) { foods.splice(i,1); spawnFood(); me.score += 10; document.getElementById('scoreVal').innerText = me.score; me.p.push({...me.p[me.p.length-1]}); }
             });
 
-            // Bot (Hancur jadi makanan)
-            bots.forEach((b, index) => {
-                b.a += (Math.random() - 0.5) * 0.2;
-                b.x = (b.x + Math.cos(b.a) * 1.5 + canvas.width) % canvas.width;
-                b.y = (b.y + Math.sin(b.a) * 1.5 + canvas.height) % canvas.height;
-                b.p.unshift({x: b.x, y: b.y}); b.p.pop();
+            // Bot (Bisa dimakan)
+            bots.forEach((b, i) => {
+                b.a += (Math.random()-0.5)*0.2;
+                b.x = (b.x + Math.cos(b.a)*1.5 + canvas.width)%canvas.width;
+                b.y = (b.y + Math.sin(b.a)*1.5 + canvas.height)%canvas.height;
+                b.p.unshift({x:b.x, y:b.y}); b.p.pop();
                 drawSnake(b.p, b.c, b.n);
-                
-                if(Math.hypot(me.x - b.x, me.y - b.y) < 25) {
-                    for(let i=0; i<5; i++) foods.push({x: b.x+(Math.random()-0.5)*50, y: b.y+(Math.random()-0.5)*50, imgIdx: Math.floor(Math.random()*3)});
-                    bots.splice(index, 1); spawnBot(); 
-                    me.score += 50; document.getElementById('scoreVal').innerText = me.score;
-                    playSound('makan');
-                }
+                if(Math.hypot(me.x-b.x, me.y-b.y) < 25) { bots.splice(i,1); spawnBot(); me.score += 50; document.getElementById('scoreVal').innerText = me.score; }
             });
 
-            // Lawan Mabar (Nabrak ini mati)
+            // Lawan Mabar (Bikin Mati)
             Object.values(opponents).forEach(opp => {
                 drawSnake(opp.p, '#22c55e', opp.n);
-                opp.p.forEach(pt => {
-                    if(Math.hypot(me.x - pt.x, me.y - pt.y) < 18) gameOver();
-                });
+                opp.p.forEach(pt => { if(Math.hypot(me.x - pt.x, me.y - pt.y) < 15) gameOver(); });
             });
 
             drawSnake(me.p, me.c, me.n);
             requestAnimationFrame(loop);
         }
 
-        function gameOver() {
-            if(!play) return;
-            play = false; playSound('mati');
-            document.getElementById('gameover').classList.remove('hidden');
-            document.getElementById('finalScore').innerText = "Skor: " + me.score;
-            if(navigator.vibrate) navigator.vibrate(200);
+        function drawSnake(p, c, n) {
+            ctx.strokeStyle = c; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.beginPath();
+            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)); ctx.stroke();
+            ctx.fillStyle = "white"; ctx.fillText(n, p[0].x, p[0].y - 20);
         }
 
-        // Jalankan PeerJS
-        window.onload = initPeer;
+        function gameOver() { play = false; document.getElementById('gameover').classList.remove('hidden'); }
     </script>
 </body>
 </html>
