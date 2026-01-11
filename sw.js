@@ -1,10 +1,10 @@
-const CACHE_NAME = 'cacing-3';
+const CACHE_NAME = 'cacing-4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './pwa.js',
   './manifest.json',
-  'https://cdn-icons-png.flaticon.com/512/528/528076.png'
+  
 ];
 
 // Install: Simpan aset ke cache
