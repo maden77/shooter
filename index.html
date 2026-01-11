@@ -112,7 +112,7 @@
                 for(let i=0; i<15; i++) this.segments.push({x: x, y: y});
                 this.color = color;
                 this.angle = Math.random() * 6.28;
-                this.speed = isBot ? 2: 4;
+                this.speed = isBot ? 2.5: 4;
                 this.radius = 12;
                 this.isBot = isBot;
                 this.alive = true;
@@ -170,7 +170,7 @@
             draw() {
                 if(!this.alive) return;
                 ctx.save();
-                ctx.shadowBlur = 10; ctx.shadowColor = this.color;
+                ctx.shadowBlur = 8; ctx.shadowColor = this.color;
                 this.segments.forEach((s, i) => {
                     ctx.fillStyle = i === 0 ? "white" : this.color;
                     ctx.beginPath();
@@ -202,8 +202,8 @@
         // --- CORE FUNCTIONS ---
         function startGame(mode) {
             document.getElementById('lobby').classList.add('hidden');
-            for(let i=0; i<1000; i++) spawnFood(true);
-            for(let i=0; i<100; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
+            for(let i=0; i<100; i++) spawnFood(true);
+            for(let i=0; i<1000; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
             gameActive = true;
             gameLoop();
         }
@@ -228,7 +228,7 @@
             drawGrid();
 
             // Handle Foods
-            ctx.font = "50px Arial";
+            ctx.font = "30px Arial";
             for(let i=foods.length-1; i>=0; i--) {
                 let f = foods[i];
                 ctx.fillText(f.emoji, f.x - viewport.x, f.y - viewport.y);
