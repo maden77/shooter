@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon2048-192x192.png" sizes="192x192">
     <title>Snake Master: Ultimate Infinite</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
@@ -332,6 +334,7 @@
 
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
         updateUI();
+          <script src="pwa.js"></script>
     </script>
 </body>
 </html>
