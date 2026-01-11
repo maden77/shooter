@@ -200,8 +200,8 @@
         // --- CORE FUNCTIONS ---
         function startGame(mode) {
             document.getElementById('lobby').classList.add('hidden');
-            for(let i=0; i<150; i++) spawnFood(true);
-            for(let i=0; i<10; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
+            for(let i=0; i<1000; i++) spawnFood(true);
+            for(let i=0; i<100; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
             gameActive = true;
             gameLoop();
         }
