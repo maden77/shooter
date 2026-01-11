@@ -112,33 +112,21 @@
         ];
                    // --- SISTEM SUARA ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-function playSound(type) {
-    // PENTING: Paksa AudioContext aktif kembali jika dalam status 'suspended'
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
+              function playSound(type) {
     if (type === 'makan') {
-        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume sedikit diperkeras
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
+        // Menggunakan link MP3 yang kamu berikan
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        audio.volume = 0.5; // Atur volume (0.0 sampai 1.0)
+        audio.play().catch(e => console.log("Audio play diblokir browser:", e));
     } else if (type === 'mati') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
+        // Efek suara mati (opsional, bisa diganti link lain)
+        const deadAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2021/2021-preview.mp3');
+        deadAudio.play().catch(e => {});
     }
 }
+
+
+
                 // --- ID & NAMA PERMANEN ---
         let myShortId = localStorage.getItem('cacingPlayerId');
         if (!myShortId) {
