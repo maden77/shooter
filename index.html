@@ -45,7 +45,7 @@
         <div class="modal-content">
             <h1 style="color:var(--neon); margin-bottom: 5px;">SNAKE MASTER</h1>
             <p style="font-size: 12px; color: #888; margin-bottom: 20px;">v2.0 Infinite World & Smart Bots</p>
-                   <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
+                  
             
             <div id="main-menu">
                 <button style="width:100%; margin-bottom:10px" onclick="startGame('solo')">👤 MAIN SOLO</button>
@@ -236,13 +236,40 @@ function playSound(type) {
         let peer, conn;
 
         // --- CORE FUNCTIONS ---
-        function startGame(mode) {
-            document.getElementById('lobby').classList.add('hidden');
-            for(let i=0; i<100; i++) spawnFood(true);
-            for(let i=0; i<1000; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
-            gameActive = true;
-            gameLoop();
-        }
+    function startGame(mode) {
+    // 1. Ambil dan validasi nama
+    const name = document.getElementById('nameInput').value.trim();
+    
+    if (name === "") {
+        alert("Woi, isi dulu namanya!");
+        return; // Berhenti di sini jika nama kosong
+    }
+
+    // 2. Sembunyikan menu/lobby
+    document.getElementById('lobby').classList.add('hidden');
+
+    // 3. Inisialisasi dunia game
+    for(let i=0; i<100; i++) spawnFood(true);
+    
+    // 4. Spawn bot (100 bot mungkin agak berat, pastikan performa aman)
+    for(let i=0; i<1000; i++) {
+        bots.push(new Snake(
+            (Math.random()-0.5)*2000, 
+            (Math.random()-0.5)*2000, 
+            `hsl(${Math.random()*360},70%,50%)`, 
+            true
+        ));
+    }
+
+    // 5. Aktifkan loop game
+    gameActive = true;
+    console.log("Memulai game sebagai: " + name);
+    gameLoop();
+}
+
+       
+
+        
 
         function spawnFood(init = false) {
             let x = init ? (Math.random()-0.5)*3000 : p1.segments[0].x + (Math.random()-0.5)*3000;
