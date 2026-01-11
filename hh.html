@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Neon PWA</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --gold: #ffd700; --bg: #0a0a12; }
+        body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
+        canvas { display: block; }
+
+        /* UI Overlay */
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; padding: 15px; box-sizing: border-box; }
+        .pointer { pointer-events: auto; }
+        
+        #stats-top { display: flex; flex-direction: column; gap: 5px; }
+        .stat-box { background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--neon); width: fit-content; }
+        
+        #leaderboard { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; width: 150px; font-size: 12px; border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* Buttons */
+        .btn-group { position: absolute; top: 100px; left: 15px; display: flex; flex-direction: column; gap: 10px; }
+        button { background: rgba(255,255,255,0.1); border: 1px solid var(--neon); color: white; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        /* Modals */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; pointer-events: auto; }
+        .modal-content { background: #16213e; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; border: 2px solid var(--neon); text-align: center; }
+        .grid-shop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .item-card { background: #1a1a2e; padding: 15px; border-radius: 10px; border: 1px solid #333; }
+        .item-card.active { border-color: var(--neon); background: rgba(0,242,255,0.1); }
+
+        /* Joystick */
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(0,242,255,0.3); pointer-events: auto; }
+        #joy-stick { position: absolute; top: 25px; left: 25px; width: 50px; height: 50px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 15px var(--neon); transition: transform 0.1s; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui">
+        <div id="stats-top">
+            <div class="stat-box">⭐ LVL <span id="lvl">1</span> | XP <span id="xp">0</span>%</div>
+            <div class="stat-box" style="color: var(--gold)">🪙 <span id="coins">0</span></div>
+        </div>
+
+        <div id="leaderboard">
+            <h4 style="margin:0 0 5px 0">RANKING</h4>
+            <div id="rank-list"></div>
+        </div>
+
+        <div class="btn-group pointer">
+            <button onclick="openModal('shop')">🛒 TOKO</button>
+            <button onclick="openModal('quest')" style="border-color: #ff9800;">📜 QUEST</button>
+        </div>
+
+        <div id="joy-base" class="pointer">
+            <div id="joy-stick"></div>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <h3>TOKO SKIN</h3>
+            <div id="skin-list" class="grid-shop"></div>
+            <button onclick="closeModals()">TUTUP</button>
+        </div>
+    </div>
+
+    <div id="quest-modal" class="modal">
+        <div class="modal-content">
+            <h3>QUEST HARIAN</h3>
+            <div id="quest-list" style="text-align: left;"></div>
+            <button onclick="closeModals()" style="margin-top:15px">TUTUP</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const WORLD_SIZE = 3000;
+        let viewport = { x: 0, y: 0 };
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Sound Effects (Placeholder)
+        const sndEat = new Audio('https://assets.mixkit.co/active_storage/sfx/2034/2034-preview.mp3');
+
+        // Game State & Save Data
+        let data = JSON.parse(localStorage.getItem('snake_data')) || {
+            coins: 0, lvl: 1, xp: 0, ownedSkins: ['#ff0055'], activeSkin: '#ff0055'
+        };
+
+        let quests = JSON.parse(localStorage.getItem('snake_quests')) || {
+            day: new Date().getDate(),
+            tasks: [{id:1, txt: "Makan 20 Buah", target: 20, cur: 0, prize: 100, done: false}]
+        };
+
+        const skins = [
+            {n: "Neon Red", c: "#ff0055", p: 0},
+            {n: "Cyber Blue", c: "#00f2ff", p: 200},
+            {n: "Toxic Green", c: "#39ff14", p: 500}
+        ];
+
+        class Snake {
+            constructor(x, y, color, isAI = false) {
+                this.segments = Array(15).fill({x, y});
+                this.color = color;
+                this.angle = 0;
+                this.speed = 3;
+                this.radius = 12;
+                this.isAI = isAI;
+            }
+
+            update() {
+                let head = this.segments[0];
+                if(this.isAI) this.angle += (Math.random() - 0.5) * 0.2;
+                
+                let newHead = {
+                    x: head.x + Math.cos(this.angle) * this.speed,
+                    y: head.y + Math.sin(this.angle) * this.speed
+                };
+                this.segments.unshift(newHead);
+                this.segments.pop();
+            }
+
+            draw() {
+                this.segments.forEach((s, i) => {
+                    ctx.fillStyle = i === 0 ? "white" : this.color;
+                    ctx.beginPath();
+                    ctx.arc(s.x - viewport.x, s.y - viewport.y, this.radius, 0, Math.PI*2);
+                    ctx.fill();
+                });
+            }
+        }
+
+        const player = new Snake(1500, 1500, data.activeSkin);
+        const foods = [];
+        for(let i=0; i<200; i++) spawnFood();
+
+        function spawnFood() {
+            foods.push({x: Math.random()*WORLD_SIZE, y: Math.random()*WORLD_SIZE, c: `hsl(${Math.random()*360}, 100%, 50%)`, s: 5});
+        }
+
+        // Joystick Logic
+        let joyActive = false;
+        const joyBase = document.getElementById('joy-base');
+        const joyStick = document.getElementById('joy-stick');
+
+        joyBase.addEventListener('touchstart', (e) => joyActive = true);
+        window.addEventListener('touchmove', (e) => {
+            if(!joyActive) return;
+            let t = e.touches[0];
+            let b = joyBase.getBoundingClientRect();
+            let dx = t.clientX - (b.left + 50);
+            let dy = t.clientY - (b.top + 50);
+            player.angle = Math.atan2(dy, dx);
+            let dist = Math.min(Math.sqrt(dx*dx+dy*dy), 40);
+            joyStick.style.transform = `translate(${Math.cos(player.angle)*dist}px, ${Math.sin(player.angle)*dist}px)`;
+        });
+        window.addEventListener('touchend', () => { joyActive = false; joyStick.style.transform = `translate(0,0)`; });
+
+        function gameLoop() {
+            ctx.fillStyle = '#0a0a12';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            viewport.x = player.segments[0].x - canvas.width/2;
+            viewport.y = player.segments[0].y - canvas.height/2;
+
+            // Draw Food & Collision
+            foods.forEach((f, i) => {
+                ctx.fillStyle = f.c;
+                ctx.beginPath(); ctx.arc(f.x - viewport.x, f.y - viewport.y, f.s, 0, Math.PI*2); ctx.fill();
+                
+                let dx = player.segments[0].x - f.x;
+                let dy = player.segments[0].y - f.y;
+                if(Math.sqrt(dx*dx+dy*dy) < 20) {
+                    foods.splice(i, 1);
+                    spawnFood();
+                    data.coins += 2;
+                    data.xp += 5;
+                    if(data.xp >= 100) { data.lvl++; data.xp = 0; if(navigator.vibrate) navigator.vibrate(100); }
+                    updateQuest(1, 1);
+                    sndEat.play();
+                    save();
+                }
+            });
+
+            player.update();
+            player.draw();
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateUI() {
+            document.getElementById('lvl').innerText = data.lvl;
+            document.getElementById('xp').style.width = data.xp + "%";
+            document.getElementById('coins').innerText = data.coins;
+        }
+
+        function save() {
+            localStorage.setItem('snake_data', JSON.stringify(data));
+            localStorage.setItem('snake_quests', JSON.stringify(quests));
+        }
+
+        function openModal(type) {
+            document.getElementById(type + '-modal').style.display = 'flex';
+            if(type === 'shop') renderShop();
+            if(type === 'quest') renderQuests();
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        }
+
+        function renderShop() {
+            let h = '';
+            skins.forEach(s => {
+                let own = data.ownedSkins.includes(s.c);
+                h += `<div class="item-card ${data.activeSkin === s.c ? 'active' : ''}" onclick="buySkin('${s.c}', ${s.p})">
+                    <div style="background:${s.c};width:30px;height:30px;border-radius:50%;margin:0 auto 10px"></div>
+                    <div>${s.n}</div>
+                    <small>${own ? 'MILIK' : '💰'+s.p}</small>
+                </div>`;
+            });
+            document.getElementById('skin-list').innerHTML = h;
+        }
+
+        function buySkin(c, p) {
+            if(data.ownedSkins.includes(c)) { data.activeSkin = c; player.color = c; }
+            else if(data.coins >= p) { data.coins -= p; data.ownedSkins.push(c); data.activeSkin = c; player.color = c; }
+            save(); renderShop();
+        }
+
+        function updateQuest(id, amt) {
+            let q = quests.tasks.find(t => t.id === id);
+            if(q && !q.done) { q.cur += amt; if(q.cur >= q.target) { q.cur = q.target; } save(); }
+        }
+
+        function renderQuests() {
+            let h = '';
+            quests.tasks.forEach(t => {
+                let canClaim = t.cur >= t.target && !t.done;
+                h += `<div class="item-card" style="width:100%;margin-bottom:10px;box-sizing:border-box">
+                    <div>${t.txt} (${t.cur}/${t.target})</div>
+                    <button onclick="claimQuest(${t.id})" ${!canClaim?'disabled':''} style="width:100%;margin-top:10px;background:#4caf50">
+                        ${t.done ? 'SELESAI' : (canClaim ? 'AMBIL 💰'+t.prize : 'PROGRES')}
+                    </button>
+                </div>`;
+            });
+            document.getElementById('quest-list').innerHTML = h;
+        }
+
+        function claimQuest(id) {
+            let q = quests.tasks.find(t => t.id === id);
+            q.done = true; data.coins += q.prize; save(); renderQuests();
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
