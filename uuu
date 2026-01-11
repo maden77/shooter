@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Master: Ultimate Infinite</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --gold: #ffd700; --bg: #05050a; --danger: #ff0055; }
+        body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
+        canvas { display: block; background: #05050a; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .pointer { pointer-events: auto; }
+        #stats-bar { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .box { background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--neon); font-size: 13px; width: fit-content; backdrop-filter: blur(5px); }
+        .menu-btns { position: absolute; top: 100px; left: 15px; display: flex; flex-direction: column; gap: 10px; }
+        button { background: rgba(255,255,255,0.1); border: 1px solid var(--neon); color: white; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; transition: all 0.2; }
+        button:hover { background: rgba(255,255,255,0.2); }
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 2px solid rgba(0,242,255,0.2); }
+        #joy-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 15px var(--neon); opacity: 0.6; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: #0a0a1a; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; border: 2px solid var(--neon); text-align: center; }
+        .hidden { display: none !important; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .card { background: #111; padding: 10px; border-radius: 10px; border: 1px solid #333; cursor: pointer; }
+        .card.active { border-color: var(--neon); background: rgba(0,242,255,0.1); }
+        input { padding: 12px; border-radius: 8px; border: 1px solid var(--neon); background: #111; color: white; width: 80%; margin: 10px 0; text-align: center; }
+        .player-list { margin: 15px 0; max-height: 100px; overflow-y: auto; background: #000; padding: 5px; border-radius: 5px; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,242,255,0.3); border-top: 5px solid var(--neon); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="loading"><div class="spinner"></div></div>
+
+    <div id="lobby" class="modal hidden">
+        <div class="modal-content">
+            <h1 style="color:var(--neon); margin:0;">SNAKE MASTER</h1>
+            <p style="font-size: 12px; color: #888; margin-bottom: 20px;">v2.1 Stable</p>
+            <div id="main-menu">
+                <input type="text" id="nameInput" placeholder="NAMA KAMU...">
+                <button style="width:100%; margin-bottom:10px" onclick="startGame('solo')">👤 MAIN SOLO</button>
+                <button style="width:100%; margin-bottom:10px" onclick="openMultiplayer()">🎮 MABAR (WIFI)</button>
+            </div>
+            <div id="multi-menu" class="hidden">
+                <p>ID KAMU: <span id="my-id" style="color:var(--gold)">....</span></p>
+                <button style="width:100%; margin-bottom:10px" onclick="createRoom()">👑 BUAT ROOM</button>
+                <input type="number" id="join-id" placeholder="ID TEMAN">
+                <button style="width:100%; margin-bottom:10px" onclick="joinRoom()">🔗 GABUNG</button>
+                <div id="player-list-container" class="hidden">
+                    <div id="player-list" class="player-list"></div>
+                    <button style="width:100%; background:green" onclick="startMultiplayerGame()">MULAI GAME</button>
+                </div>
+                <button style="margin-top:15px; background:none; border:1px solid #666; width:100%" onclick="backToMain()">KEMBALI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="color:var(--danger)">MODAR!</h2>
+            <p id="final-score">Skor: 0</p>
+            <button onclick="location.reload()">MAIN LAGI</button>
+        </div>
+    </div>
+
+    <div id="shop" class="modal hidden">
+        <div class="modal-content">
+            <h3>TOKO SKIN</h3>
+            <div id="skin-list" class="grid"></div>
+            <button onclick="closeShop()">TUTUP</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="stats-bar">
+            <div class="box">🪙 Koin: <span id="ui-coins">0</span></div>
+            <div class="box" style="border-color:var(--gold)">📏 Panjang: <span id="ui-len">15</span></div>
+        </div>
+        <div class="menu-btns"><button onclick="openShop()">🛒 SKIN</button></div>
+        <div id="joy-base" class="pointer"><div id="joy-stick"></div></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let viewport = { x: 0, y: 0 };
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let db = JSON.parse(localStorage.getItem('snake_db')) || { coins: 0, owned: ['#00f2ff'], active: '#00f2ff' };
+        let myName = localStorage.getItem('snake_name') || "Player";
+        let myShortId = Math.floor(1000 + Math.random() * 9000).toString();
+
+        let p1, foods = [], bots = [], multiPlayers = {}, gameActive = false, gameMode = 'solo';
+        let peer, conn, connections = [];
+
+        class Snake {
+            constructor(x, y, color, isBot = false, id, name) {
+                this.segments = [];
+                for(let i = 0; i < 15; i++) this.segments.push({x: x, y: y});
+                this.color = color;
+                this.angle = Math.random() * 6.28;
+                this.speed = 3;
+                this.radius = 12;
+                this.isBot = isBot;
+                this.alive = true;
+                this.id = id;
+                this.name = name;
+            }
+
+            update() {
+                if(!this.alive) return;
+                let head = this.segments[0];
+
+                if(this.isBot) {
+                    let target = this.getNearestFood(head);
+                    if(target) {
+                        let targetAngle = Math.atan2(target.y - head.y, target.x - head.x);
+                        this.angle += (targetAngle - this.angle) * 0.1;
+                    }
+                }
+
+                let newHead = {
+                    x: head.x + Math.cos(this.angle) * this.speed,
+                    y: head.y + Math.sin(this.angle) * this.speed
+                };
+
+                this.segments.unshift(newHead);
+                this.segments.pop();
+                this.checkCollisions();
+            }
+
+            getNearestFood(head) {
+                let min = 500, nearest = null;
+                foods.forEach(f => {
+                    let d = Math.hypot(f.x - head.x, f.y - head.y);
+                    if(d < min) { min = d; nearest = f; }
+                });
+                return nearest;
+            }
+
+            checkCollisions() {
+                let head = this.segments[0];
+                // Food
+                for(let i = foods.length - 1; i >= 0; i--) {
+                    if(Math.hypot(head.x - foods[i].x, head.y - foods[i].y) < 30) {
+                        foods.splice(i, 1);
+                        this.segments.push({...this.segments[this.segments.length-1]});
+                        if(!this.isBot && this.id === myShortId) {
+                            db.coins += 5; updateUI();
+                        }
+                        spawnFood();
+                    }
+                }
+                // Border 
+                if(Math.abs(head.x) > 3000 || Math.abs(head.y) > 3000) this.die();
+            }
+
+            draw() {
+                if(!this.alive) return;
+                ctx.fillStyle = this.color;
+                this.segments.forEach((s, i) => {
+                    ctx.beginPath();
+                    ctx.arc(s.x - viewport.x, s.y - viewport.y, i===0?this.radius+2:this.radius, 0, Math.PI*2);
+                    ctx.fill();
+                });
+                ctx.fillStyle = "white";
+                ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 20);
+            }
+
+            die() {
+                this.alive = false;
+                if(this.id === myShortId) {
+                    gameActive = false;
+                    document.getElementById('game-over').classList.remove('hidden');
+                    document.getElementById('final-score').innerText = "Skor: " + this.segments.length;
+                }
+            }
+        }
+
+        function spawnFood() {
+            foods.push({
+                x: (Math.random()-0.5)*4000, 
+                y: (Math.random()-0.5)*4000, 
+                emoji: ['🍎','💎','🍬'][Math.floor(Math.random()*3)]
+            });
+        }
+
+        function startGame(mode) {
+            const nameInput = document.getElementById('nameInput').value;
+            if(!nameInput) return alert("Isi nama!");
+            myName = nameInput;
+            gameMode = mode;
+            document.getElementById('lobby').classList.add('hidden');
+            
+            p1 = new Snake(0, 0, db.active, false, myShortId, myName);
+            for(let i=0; i<100; i++) spawnFood();
+            if(mode === 'solo') {
+                for(let i=0; i<15; i++) bots.push(new Snake(Math.random()*500, Math.random()*500, "red", true, "bot"+i, "BOT"));
+            }
+            
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() {
+            if(!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            viewport.x = p1.segments[0].x - canvas.width/2;
+            viewport.y = p1.segments[0].y - canvas.height/2;
+
+            drawGrid();
+            
+            ctx.font = "20px Arial";
+            foods.forEach(f => ctx.fillText(f.emoji, f.x - viewport.x, f.y - viewport.y));
+
+            if(p1.alive) { p1.update(); p1.draw(); }
+            bots.forEach(b => { b.update(); b.draw(); });
+
+            // Multiplayer Sync
+            if(gameMode === 'multi' && conn) {
+                conn.send({type:'sync', segments: p1.segments, name: myName, color: p1.color});
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#111";
+            for(let x = -3000; x <= 3000; x+=100) {
+                ctx.beginPath(); ctx.moveTo(x-viewport.x, -3000-viewport.y); ctx.lineTo(x-viewport.x, 3000-viewport.y); ctx.stroke();
+            }
+            for(let y = -3000; y <= 3000; y+=100) {
+                ctx.beginPath(); ctx.moveTo(-3000-viewport.x, y-viewport.y); ctx.lineTo(3000-viewport.x, y-viewport.y); ctx.stroke();
+            }
+        }
+
+        // --- CONTROLS ---
+        let joyBase = document.getElementById('joy-base');
+        joyBase.addEventListener('touchmove', e => {
+            let rect = joyBase.getBoundingClientRect();
+            let dx = e.touches[0].clientX - (rect.left + 60);
+            let dy = e.touches[0].clientY - (rect.top + 60);
+            p1.angle = Math.atan2(dy, dx);
+            document.getElementById('joy-stick').style.transform = `translate(${dx/2}px, ${dy/2}px)`;
+        });
+        joyBase.addEventListener('touchend', () => {
+            document.getElementById('joy-stick').style.transform = `translate(0,0)`;
+        });
+
+        // --- MULTIPLAYER CORE ---
+        function openMultiplayer() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('multi-menu').classList.remove('hidden');
+            document.getElementById('my-id').innerText = myShortId;
+        }
+
+        function createRoom() {
+            peer = new Peer('snake-' + myShortId);
+            peer.on('open', () => alert("Room Berhasil Dibuat!"));
+            peer.on('connection', c => {
+                conn = c;
+                document.getElementById('player-list-container').classList.remove('hidden');
+                document.getElementById('player-list').innerHTML += `<div>Player Joined!</div>`;
+            });
+        }
+
+        function joinRoom() {
+            let targetId = document.getElementById('join-id').value;
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect('snake-' + targetId);
+                conn.on('open', () => startGame('multi'));
+            });
+        }
+
+        function backToMain() {
+            document.getElementById('multi-menu').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function updateUI() {
+            document.getElementById('ui-coins').innerText = db.coins;
+            document.getElementById('ui-len').innerText = p1 ? p1.segments.length : 15;
+            localStorage.setItem('snake_db', JSON.stringify(db));
+        }
+
+        function openShop() {
+            document.getElementById('shop').classList.remove('hidden');
+            let list = document.getElementById('skin-list'); list.innerHTML = "";
+            [{n:"Cyan",c:"#00f2ff"},{n:"Red",c:"#ff0055"},{n:"Gold",c:"#ffd700"}].forEach(s => {
+                list.innerHTML += `<div class="card" onclick="db.active='${s.c}';closeShop();p1.color='${s.c}'" style="background:${s.c}">${s.n}</div>`;
+            });
+        }
+        function closeShop() { document.getElementById('shop').classList.add('hidden'); }
+
+        window.onload = () => {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('lobby').classList.remove('hidden');
+            document.getElementById('nameInput').value = myName;
+        };
+    </script>
+</body>
+</html>
