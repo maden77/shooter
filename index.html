@@ -441,8 +441,59 @@
     
     return false;
 }
+        checkSelfCollision() {
+                if (this.isBot) return false; // Bots don't die from self-collision
                 
-          
+                const head = this.segments[0];
+                
+                // Check collision with own body (skip first 4 segments near head)
+                for (let i = 4; i < this.segments.length; i++) {
+                    const segment = this.segments[i];
+                    const dx = head.x - segment.x;
+                    const dy = head.y - segment.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < this.radius) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }          
+                   // HANYA CHECK JIKA PLAYER NABRAK BOT
+            checkCollisionWithBot(bot) {
+                if (!bot || !bot.alive || this.isBot) return false;
+                
+                const head = this.segments[0];
+                
+                // Check collision with bot's head
+                const botHead = bot.segments[0];
+                const headDist = Math.sqrt(
+                    Math.pow(head.x - botHead.x, 2) + 
+                    Math.pow(head.y - botHead.y, 2)
+                );
+                
+                // Jika player nabrak kepala bot
+                if (headDist < this.radius + bot.radius) {
+                    return true;
+                }
+                
+                // Check collision with bot's body
+                for (let i = 0; i < bot.segments.length; i++) {
+                    const segment = bot.segments[i];
+                    const dist = Math.sqrt(
+                        Math.pow(head.x - segment.x, 2) + 
+                        Math.pow(head.y - segment.y, 2)
+                    );
+                    
+                    // Jika player nabrak tubuh bot
+                    if (dist < this.radius + 5) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
                 
               
             
