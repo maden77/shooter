@@ -80,7 +80,7 @@
     <div id="ui-layer">
         <div id="stats-bar">
             <div class="box">🪙 Koin: <span id="ui-coins">0</span></div>
-            <div class="box" style="border-color:var(--gold)">📏 Panjang: <span id="ui-len">15</span></div>
+            <div class="box" style="border-color:var(--gold)">📏🍺🍻🍩🍫🍬🍙🧆🥘🍝🍔🥩🍖🧀🍖🍄‍🟫 Panjang: <span id="ui-len">15</span></div>
         </div>
         <div class="menu-btns">
             <button onclick="openShop()">🛒 SKIN</button>
@@ -110,7 +110,7 @@
                 for(let i=0; i<15; i++) this.segments.push({x: x, y: y});
                 this.color = color;
                 this.angle = Math.random() * 6.28;
-                this.speed = isBot ? 2.8 : 4;
+                this.speed = isBot ? 2: 4;
                 this.radius = 12;
                 this.isBot = isBot;
                 this.alive = true;
@@ -226,7 +226,7 @@
             drawGrid();
 
             // Handle Foods
-            ctx.font = "20px Arial";
+            ctx.font = "50px Arial";
             for(let i=foods.length-1; i>=0; i--) {
                 let f = foods[i];
                 ctx.fillText(f.emoji, f.x - viewport.x, f.y - viewport.y);
