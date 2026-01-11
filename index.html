@@ -598,7 +598,297 @@
         let gameMode = 'solo'; // 'solo', 'host', 'client'
         let player = null;
         let foods = [];
-        let bots = [];
+        let bots = []; 
+   // =============================================
+// KODE YANG DITAMBAHKAN DI CLASS BOT
+// =============================================
+
+class Bot {
+    constructor(x, y, skin, name, id = null) {
+        this.x = x;
+        this.y = y;
+        this.skin = skin || 'default';  // Bot juga punya skin
+        this.name = name;
+        this.id = id || Math.random().toString(36).substr(2, 9);
+        this.isBot = true;
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = 1.5 + Math.random() * 0.5; // Random speed
+        this.radius = 10; // Sama dengan player
+        this.alive = true;
+        this.score = 0;
+        this.segments = [];
+        this.color = this.getSkinColor(this.skin);
+        
+        // Pilih nama bot yang keren
+        const botNames = [
+            'Bot Warrior', 'Snake AI', 'Metal Gear', 'Python Bot',
+            'Venom Snake', 'Cyber Snake', 'Ghost Bot', 'Stealth Bot'
+        ];
+        this.name = botNames[Math.floor(Math.random() * botNames.length)];
+        
+        // Buat tubuh cacing dengan panjang random
+        const length = 8 + Math.floor(Math.random() * 7); // 8-15 segments
+        for (let i = 0; i < length; i++) {
+            this.segments.push({
+                x: this.x - i * 3,
+                y: this.y
+            });
+        }
+        
+        // Bot properties
+        this.targetFood = null;
+        this.turnTimer = 0;
+        this.behavior = Math.random(); // Random behavior type
+        this.aggressiveness = Math.random(); // 0-1
+    }
+    
+    getSkinColor(skinId) {
+        // Warna khusus untuk bot yang berbeda
+        const botSkins = [
+            '#ef4444', // Red
+            '#dc2626', // Dark Red
+            '#b91c1c', // Crimson
+            '#991b1b', // Maroon
+            '#7f1d1d', // Dark Maroon
+            '#ea580c', // Orange
+            '#c2410c', // Dark Orange
+            '#9a3412', // Rust
+            '#7c2d12', // Brown
+            '#431407'  // Dark Brown
+        ];
+        return botSkins[Math.floor(Math.random() * botSkins.length)];
+    }
+    
+    update() {
+        if (!this.alive) return;
+        
+        // Update bot AI berdasarkan behavior
+        this.updateBotAI();
+        
+        // Gerak
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+        
+        // Update segments
+        this.segments.unshift({ x: this.x, y: this.y });
+        if (this.segments.length > 25) { // Max length untuk bot
+            this.segments.pop();
+        }
+        
+        // Coba makan makanan
+        this.eatFood();
+    }
+    
+    updateBotAI() {
+        this.turnTimer--;
+        
+        // Bot dengan behavior berbeda
+        if (this.behavior < 0.3) {
+            // Behavior 1: Passive - cari makanan saja
+            this.findFood();
+        } else if (this.behavior < 0.6) {
+            // Behavior 2: Aggressive - cari player
+            this.huntPlayer();
+        } else if (this.behavior < 0.8) {
+            // Behavior 3: Defensive - hindari player
+            this.avoidPlayer();
+        } else {
+            // Behavior 4: Random movement
+            this.randomMovement();
+        }
+        
+        // Update movement based on target
+        if (this.targetFood) {
+            const targetAngle = Math.atan2(
+                this.targetFood.y - this.y,
+                this.targetFood.x - this.x
+            );
+            
+            let diff = targetAngle - this.angle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            
+            this.angle += diff * 0.1;
+        }
+    }
+    
+    findFood() {
+        if (this.turnTimer <= 0 || !this.targetFood) {
+            let closestFood = null;
+            let closestDist = Infinity;
+            
+            for (const food of foods) {
+                const dist = Math.hypot(this.x - food.x, this.y - food.y);
+                if (dist < closestDist && dist < 600) {
+                    closestDist = dist;
+                    closestFood = food;
+                }
+            }
+            
+            this.targetFood = closestFood;
+            this.turnTimer = 30 + Math.random() * 30;
+        }
+    }
+    
+    huntPlayer() {
+        if (player && player.alive) {
+            const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
+            
+            if (distToPlayer < 400 && Math.random() < this.aggressiveness) {
+                // Hunt player
+                const targetAngle = Math.atan2(
+                    player.y - this.y,
+                    player.x - this.x
+                );
+                
+                let diff = targetAngle - this.angle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                
+                this.angle += diff * 0.15;
+            } else {
+                this.findFood();
+            }
+        } else {
+            this.findFood();
+        }
+    }
+    
+    avoidPlayer() {
+        if (player && player.alive) {
+            const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
+            
+            if (distToPlayer < 300) {
+                // Run away from player
+                const runAngle = Math.atan2(
+                    this.y - player.y,
+                    this.x - player.x
+                );
+                
+                let diff = runAngle - this.angle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                
+                this.angle += diff * 0.2;
+            } else {
+                this.findFood();
+            }
+        } else {
+            this.findFood();
+        }
+    }
+    
+    randomMovement() {
+        this.angle += (Math.random() - 0.5) * 0.3;
+        
+        if (Math.random() < 0.05) {
+            this.targetFood = null;
+        }
+    }
+    
+    eatFood() {
+        for (let i = foods.length - 1; i >= 0; i--) {
+            const food = foods[i];
+            const dist = Math.hypot(this.x - food.x, this.y - food.y);
+            
+            if (dist < 20) {
+                // Bot makan makanan
+                foods.splice(i, 1);
+                this.grow();
+                
+                // Tambah score bot (tidak terlihat oleh player)
+                this.score += food.value;
+                
+                // Spawn makanan baru
+                spawnFood();
+                break;
+            }
+        }
+    }
+    
+    grow() {
+        // Bot tumbuh lebih lambat dari player
+        if (Math.random() < 0.5) {
+            const tail = this.segments[this.segments.length - 1];
+            this.segments.push({ x: tail.x, y: tail.y });
+        }
+    }
+    
+    // =============================================
+    // FUNGSI DRAW BOT YANG SAMA DENGAN PLAYER
+    // =============================================
+    draw() {
+        if (!this.alive) return;
+        
+        // Draw body dengan efek yang SAMA seperti player
+        ctx.save();
+        
+        // Efek glow untuk bot
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        
+        // Body dengan gradient (sama seperti player)
+        ctx.lineWidth = 14;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Gradient untuk bot
+        const gradient = ctx.createLinearGradient(
+            this.segments[0].x - viewport.x,
+            this.segments[0].y - viewport.y,
+            this.segments[this.segments.length - 1].x - viewport.x,
+            this.segments[this.segments.length - 1].y - viewport.y
+        );
+        
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, this.color + 'aa');
+        ctx.strokeStyle = gradient;
+        
+        // Draw body
+        ctx.beginPath();
+        for (let i = 0; i < this.segments.length; i++) {
+            const seg = this.segments[i];
+            if (i === 0) {
+                ctx.moveTo(seg.x - viewport.x, seg.y - viewport.y);
+            } else {
+                ctx.lineTo(seg.x - viewport.x, seg.y - viewport.y);
+            }
+        }
+        ctx.stroke();
+        
+        // Draw head dengan mata (sama seperti player)
+        const head = this.segments[0];
+        ctx.fillStyle = '#ff6666'; // Warna kepala bot sedikit berbeda
+        ctx.beginPath();
+        ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw eyes (sama seperti player tapi warna berbeda)
+        ctx.fillStyle = '#8b0000'; // Mata bot lebih gelap
+        const eyeOffset = 4;
+        ctx.beginPath();
+        ctx.arc(head.x - viewport.x - eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(head.x - viewport.x + eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw name dengan style berbeda
+        ctx.fillStyle = '#ff6666';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 3;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 25);
+        
+        // Draw bot indicator
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '10px Arial';
+        ctx.fillText('🤖', head.x - viewport.x, head.y - viewport.y - 40);
+        
+        ctx.restore();
+    }
+}
         let viewport = { x: 0, y: 0 };
         let stats = {
             coins: 0,
@@ -943,10 +1233,42 @@
                 rotation: Math.random() * Math.PI * 2
             });
         }
-        
+
         function spawnBot() {
-            const botColors = ['#ef4444', '#dc2626', '#b91c1c', '#991b1b'];
-            const color = botColors[Math.floor(Math.random() * botColors.length)];
+    // Posisi spawn random di sekitar player
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 300 + Math.random() * 400;
+    const x = player ? player.x + Math.cos(angle) * distance : (Math.random() - 0.5) * 2000;
+    const y = player ? player.y + Math.sin(angle) * distance : (Math.random() - 0.5) * 2000;
+    
+    // Buat bot dengan bentuk cacing
+    const bot = new Bot(x, y, 'bot_skin', '');
+    
+    // Beri kemampuan khusus berdasarkan level
+    const botLevel = Math.floor(Math.random() * 3); // 0, 1, atau 2
+    
+    if (botLevel === 1) {
+        // Bot level 1: Lebih cepat
+        bot.speed += 0.3;
+        bot.name = '⚡ ' + bot.name;
+    } else if (botLevel === 2) {
+        // Bot level 2: Lebih panjang
+        for (let i = 0; i < 5; i++) {
+            const tail = bot.segments[bot.segments.length - 1];
+            bot.segments.push({ x: tail.x, y: tail.y });
+        }
+        bot.name = '💪 ' + bot.name;
+    }
+    
+    bots.push(bot);
+    
+    // Show notification untuk bot khusus
+    if (botLevel > 0) {
+        showNotification(`🤖 ${bot.name} muncul di arena!`, '#ef4444');
+    }
+}
+        
+      
             
             // Spawn bot away from player
             const angle = Math.random() * Math.PI * 2;
@@ -1121,9 +1443,64 @@
             }
         }
         
-        function eatBot(botIndex) {
-            const bot = bots[botIndex];
-            
+        
+            function eatBot(botIndex) {
+    const bot = bots[botIndex];
+    
+    // Efek visual sebelum bot mati
+    ctx.save();
+    const head = bot.segments[0];
+    ctx.fillStyle = '#ff0000';
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(head.x - viewport.x, head.y - viewport.y, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    
+    // Bot mati
+    bot.alive = false;
+    
+    // Tambah rewards
+    const killReward = 50 + Math.floor(bot.segments.length / 3) * 10;
+    playerData.coins += killReward;
+    stats.coins += killReward;
+    player.score += killReward * 2;
+    stats.score += killReward * 2;
+    stats.kills++;
+    
+    // Show notification dengan info bot
+    showNotification(`⚔️ ${bot.name} DIMAKAN! +${killReward}🪙`, '#22c55e');
+    
+    // Spawn makanan khusus dari bot mati
+    const foodCount = Math.min(bot.segments.length, 15);
+    for (let i = 0; i < foodCount; i++) {
+        const idx = Math.floor(i * bot.segments.length / foodCount);
+        const segment = bot.segments[idx];
+        
+        foods.push({
+            x: segment.x + (Math.random() - 0.5) * 40,
+            y: segment.y + (Math.random() - 0.5) * 40,
+            emoji: ['🍖', '🍗', '🥩', '🍔', '🌭'][Math.floor(Math.random() * 5)],
+            color: '#8b0000',
+            value: 15,
+            rotation: Math.random() * Math.PI * 2
+        });
+    }
+    
+    // Remove bot
+    bots.splice(botIndex, 1);
+    
+    // Update UI
+    updateGameUI();
+    saveGameData();
+    
+    // Spawn bot baru setelah delay
+    setTimeout(() => {
+        if (gameActive && player.alive) {
+            spawnBot();
+        }
+    }, 3000);
+}
             // Bot dies
             bot.alive = false;
             
