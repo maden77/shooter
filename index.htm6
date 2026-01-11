@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Master: Mabar Edition</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --gold: #ffd700; --bg: #0a0a12; --danger: #ff0055; }
+        body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
+        canvas { display: block; }
+
+        /* --- UI UTAMA --- */
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; padding: 15px; box-sizing: border-box; }
+        .pointer { pointer-events: auto; }
+        .hidden { display: none !important; }
+
+        /* Stats Bar */
+        #stats-top { display: flex; flex-direction: column; gap: 8px; }
+        .stat-box { background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--neon); width: fit-content; font-size: 14px; font-weight: bold; }
+        
+        /* Tombol Menu Kiri */
+        .btn-group { position: absolute; top: 120px; left: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn-menu { background: rgba(0,0,0,0.5); border: 1px solid var(--neon); color: white; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; backdrop-filter: blur(5px); }
+        .btn-quest { border-color: #ff9800; color: #ff9800; }
+
+        /* Joystick Control */
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(0,242,255,0.3); pointer-events: auto; }
+        #joy-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 15px var(--neon); transition: transform 0.1s; }
+
+        /* --- MODALS (Shop, Quest, Lobby) --- */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        .modal-content { background: #16213e; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; border: 2px solid var(--neon); text-align: center; max-height: 80vh; overflow-y: auto; }
+        
+        /* Shop Styles */
+        .grid-shop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .item-card { background: #1a1a2e; padding: 10px; border-radius: 10px; border: 1px solid #333; cursor: pointer; }
+        .item-card.active { border-color: var(--neon); background: rgba(0,242,255,0.1); }
+        
+        /* Quest Styles */
+        .quest-item { background: #111; padding: 10px; margin-bottom: 10px; border-radius: 8px; text-align: left; border-left: 3px solid #ff9800; }
+        .progress-bg { width: 100%; background: #333; height: 6px; border-radius: 3px; margin-top: 5px; }
+        .progress-fill { height: 100%; background: #ff9800; width: 0%; transition: width 0.3s; }
+
+        /* Lobby Styles */
+        input { padding: 10px; border-radius: 5px; border: 1px solid var(--neon); background: #222; color: white; width: 80%; margin: 10px 0; text-align: center; }
+        .btn-big { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-primary { background: var(--neon); color: black; }
+        .btn-secondary { background: transparent; border: 1px solid white; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby-screen" class="modal">
+        <div class="modal-content">
+            <h1 style="color:var(--neon); margin:0">SNAKE ZONE</h1>
+            <p style="color:#aaa">Mabar Edition</p>
+            
+            <div id="lobby-menu">
+                <button class="btn-big btn-primary" onclick="startGame(false)">👤 MAIN SENDIRI (VS BOT)</button>
+                <hr style="border-color:#333; margin: 15px 0">
+                <button class="btn-big btn-secondary" onclick="showHostUI()">👑 BUAT ROOM (HOST)</button>
+                <button class="btn-big btn-secondary" onclick="showJoinUI()">🎮 GABUNG ROOM</button>
+            </div>
+
+            <div id="host-ui" class="hidden">
+                <h3>ID KAMU:</h3>
+                <h1 id="host-id" style="font-size:40px; color:var(--gold)">...</h1>
+                <p>Bagikan ID ini ke teman satu WiFi.</p>
+                <div id="status-host">Menunggu lawan...</div>
+                <button class="btn-big btn-secondary" onclick="backToLobby()">KEMBALI</button>
+            </div>
+
+            <div id="join-ui" class="hidden">
+                <input type="number" id="room-input" placeholder="Masukkan ID Teman">
+                <button class="btn-big btn-primary" onclick="joinGame()">MASUK</button>
+                <button class="btn-big btn-secondary" onclick="backToLobby()">KEMBALI</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui">
+        <div id="stats-top">
+            <div class="stat-box">⭐ LVL <span id="lvl">1</span> (<span id="xp">0</span>%)</div>
+            <div class="stat-box" style="color: var(--gold)">🪙 <span id="coins">0</span></div>
+            <div class="stat-box" style="background:var(--neon); color:black">P1: <span id="len-p1">10</span></div>
+            <div id="p2-stat" class="stat-box hidden" style="background:var(--danger); color:white">P2: <span id="len-p2">0</span></div>
+        </div>
+
+        <div class="btn-group pointer">
+            <button class="btn-menu" onclick="openModal('shop')">🛒 TOKO</button>
+            <button class="btn-menu btn-quest" onclick="openModal('quest')">📜 QUEST</button>
+        </div>
+
+        <div id="joy-base" class="pointer">
+            <div id="joy-stick"></div>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>TOKO SKIN</h2>
+            <div id="skin-list" class="grid-shop"></div>
+            <button class="btn-big btn-secondary" onclick="closeModals()">TUTUP</button>
+        </div>
+    </div>
+
+    <div id="quest-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>QUEST HARIAN</h2>
+            <div id="quest-list"></div>
+            <button class="btn-big btn-secondary" onclick="closeModals()">TUTUP</button>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI UMUM ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const WORLD_SIZE = 2500;
+        let viewport = { x: 0, y: 0 };
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Vibrate helper
+        const vibrate = (ms) => { if(navigator.vibrate) navigator.vibrate(ms); };
+
+        // --- DATA PEMAIN (Persistence) ---
+        let saveData = JSON.parse(localStorage.getItem('snake_pro_data')) || {
+            coins: 0, lvl: 1, xp: 0, 
+            ownedSkins: ['#00f2ff'], activeSkin: '#00f2ff'
+        };
+
+        // --- DATA QUEST ---
+        let questData = JSON.parse(localStorage.getItem('snake_pro_quests')) || {
+            date: new Date().toDateString(),
+            tasks: [
+                { id: 1, txt: "Makan 50 Buah", target: 50, cur: 0, reward: 200, done: false },
+                { id: 2, txt: "Bunuh 1 Musuh", target: 1, cur: 0, reward: 500, done: false },
+                { id: 3, txt: "Capai Panjang 100", target: 100, cur: 0, reward: 300, done: false }
+            ]
+        };
+
+        // Reset Quest jika hari berganti
+        if(questData.date !== new Date().toDateString()) {
+            questData = { 
+                date: new Date().toDateString(), 
+                tasks: questData.tasks.map(t => ({...t, cur:0, done:false})) 
+            };
+            saveQuests();
+        }
+
+        // --- GAME ENGINE VARIABLES ---
+        let gameActive = false;
+        let isMultiplayer = false;
+        let isHost = false;
+        let peer = null, conn = null;
+        
+        const fruitEmojis = ['🍎', '🍌', '🍇', '🍉', '🍍', '🍓', '🍒'];
+        const skins = [
+            {n: "Neon Blue", c: "#00f2ff", p: 0},
+            {n: "Red Dragon", c: "#ff0055", p: 500},
+            {n: "Toxic Green", c: "#39ff14", p: 1000},
+            {n: "Gold Master", c: "#ffd700", p: 5000}
+        ];
+
+        // --- CLASSES ---
+        class Snake {
+            constructor(x, y, color, name, isBot = false) {
+                this.segments = [];
+                for(let i=0; i<15; i++) this.segments.push({x, y});
+                this.color = color;
+                this.name = name;
+                this.angle = Math.random() * 6.28;
+                this.speed = isBot ? 3 : 4;
+                this.radius = 12;
+                this.isBot = isBot;
+                this.alive = true;
+            }
+
+            update() {
+                if(!this.alive) return;
+                
+                // Bot AI Logic
+                if(this.isBot) {
+                    this.angle += (Math.random() - 0.5) * 0.2;
+                    let head = this.segments[0];
+                    // Hindari tembok
+                    if(head.x < 100) this.angle = 0;
+                    if(head.x > WORLD_SIZE-100) this.angle = Math.PI;
+                    if(head.y < 100) this.angle = Math.PI/2;
+                    if(head.y > WORLD_SIZE-100) this.angle = -Math.PI/2;
+                }
+
+                let head = this.segments[0];
+                let newHead = {
+                    x: head.x + Math.cos(this.angle) * this.speed,
+                    y: head.y + Math.sin(this.angle) * this.speed
+                };
+                
+                this.segments.unshift(newHead);
+                this.segments.pop();
+
+                // Batas Dunia (Mati jika keluar)
+                if(newHead.x < 0 || newHead.x > WORLD_SIZE || newHead.y < 0 || newHead.y > WORLD_SIZE) {
+                    this.die();
+                }
+            }
+
+            // Untuk Multiplayer: Update posisi berdasarkan data lawan
+            sync(data) {
+                if(!data.alive) { if(this.alive) this.die(); return; }
+                this.alive = true;
+                // Interpolasi kasar
+                this.segments.unshift({x: data.x, y: data.y});
+                while(this.segments.length > data.len) this.segments.pop();
+                this.angle = data.angle;
+            }
+
+            draw() {
+                if(!this.alive) return;
+                this.segments.forEach((s, i) => {
+                    ctx.fillStyle = i === 0 ? "#fff" : this.color;
+                    ctx.beginPath();
+                    ctx.arc(s.x - viewport.x, s.y - viewport.y, this.radius, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Nama
+                    if(i===0) {
+                        ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.textAlign = "center";
+                        ctx.fillText(this.name, s.x - viewport.x, s.y - viewport.y - 18);
+                    }
+                });
+            }
+
+            die() {
+                if(!this.alive) return;
+                this.alive = false;
+                vibrate(200);
+                // Drop Makanan
+                this.segments.forEach((s, i) => {
+                    if(i % 2 === 0) spawnFood(s.x, s.y, 8);
+                });
+            }
+        }
+
+        // --- OBJECTS ---
+        let p1 = new Snake(WORLD_SIZE/2, WORLD_SIZE/2, saveData.activeSkin, "Player");
+        let p2 = new Snake(-1000, -1000, "#fff", "Lawan"); // P2 start jauh dulu
+        let bots = [];
+        let foods = [];
+
+        // --- FUNCTIONS UTAMA ---
+
+        function initGame() {
+            // Reset Data
+            p1 = new Snake(Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE, saveData.activeSkin, "Player");
+            bots = [];
+            foods = [];
+            
+            // Spawn Awal
+            for(let i=0; i<300; i++) spawnFood();
+            for(let i=0; i<10; i++) spawnBot(); // 10 Bot
+            
+            updateUIStats();
+        }
+
+        function spawnFood(x, y, size) {
+            foods.push({
+                x: x || Math.random()*WORLD_SIZE,
+                y: y || Math.random()*WORLD_SIZE,
+                emoji: fruitEmojis[Math.floor(Math.random()*fruitEmojis.length)],
+                s: size || 5
+            });
+        }
+
+        function spawnBot() {
+            bots.push(new Snake(Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE, 
+                `hsl(${Math.random()*360}, 100%, 50%)`, "Bot " + Math.floor(Math.random()*100), true));
+        }
+
+        function gameLoop() {
+            if(!gameActive) return;
+
+            ctx.fillStyle = '#0a0a12';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Kamera mengikuti P1
+            if(p1.alive) {
+                viewport.x = p1.segments[0].x - canvas.width/2;
+                viewport.y = p1.segments[0].y - canvas.height/2;
+            }
+
+            drawGrid();
+
+            // 1. Gambar Makanan
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            foods.forEach(f => {
+                ctx.font = `${f.s * 2.5}px serif`;
+                ctx.fillText(f.emoji, f.x - viewport.x, f.y - viewport.y);
+            });
+
+            // 2. Update & Draw Entities
+            if(p1.alive) {
+                p1.update();
+                p1.draw();
+                // Kirim data ke lawan jika multiplayer
+                if(isMultiplayer && conn && conn.open) {
+                    conn.send({x: p1.segments[0].x, y: p1.segments[0].y, len: p1.segments.length, angle: p1.angle, alive: p1.alive});
+                }
+            }
+
+            if(isMultiplayer && p2) p2.draw(); // P2 diupdate lewat event listener
+
+            bots.forEach(bot => { bot.update(); bot.draw(); });
+
+            // 3. Cek Tabrakan
+            checkCollisions();
+            
+            // 4. Update UI
+            document.getElementById('len-p1').innerText = p1.segments.length;
+            if(isMultiplayer) document.getElementById('len-p2').innerText = p2.segments.length;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function checkCollisions() {
+            if(!p1.alive) return;
+            let head = p1.segments[0];
+
+            // A. Makan Buah
+            foods.forEach((f, i) => {
+                let dx = head.x - f.x, dy = head.y - f.y;
+                if(Math.sqrt(dx*dx+dy*dy) < p1.radius + f.s) {
+                    foods.splice(i, 1);
+                    if(Math.random()<0.3) spawnFood(); // Spawn ulang acak
+                    
+                    // Benefit
+                    saveData.xp += f.s;
+                    saveData.coins += Math.floor(f.s/2);
+                    
+                    // Tambah Ekor (Grow)
+                    p1.segments.push(p1.segments[p1.segments.length-1]);
+                    
+                    // Quest Check
+                    updateQuest(1, 1); 
+                    if(p1.segments.length >= 100) updateQuest(3, 100);
+                    
+                    // Level Up logic
+                    if(saveData.xp >= saveData.lvl * 100) {
+                        saveData.lvl++; saveData.xp = 0;
+                        vibrate([50,50,50]);
+                    }
+                    saveGame(); updateUIStats();
+                }
+            });
+
+            // B. Tabrak Bot
+            bots.forEach((bot, idx) => {
+                if(!bot.alive) return;
+                // Bot tabrak Player (Bot Mati)
+                for(let i=1; i<p1.segments.length; i++) {
+                     let s = p1.segments[i];
+                     let dx = bot.segments[0].x - s.x, dy = bot.segments[0].y - s.y;
+                     if(Math.sqrt(dx*dx+dy*dy) < p1.radius + bot.radius) {
+                         bot.die();
+                         updateQuest(2, 1); // Quest Bunuh Musuh
+                         setTimeout(() => { bots.splice(idx,1); spawnBot(); }, 3000); // Respawn bot
+                     }
+                }
+                // Player tabrak Bot (Player Mati)
+                for(let i=1; i<bot.segments.length; i++) {
+                    let s = bot.segments[i];
+                    let dx = head.x - s.x, dy = head.y - s.y;
+                    if(Math.sqrt(dx*dx+dy*dy) < p1.radius + bot.radius) {
+                        p1.die();
+                        alert("GAME OVER! Kamu menabrak bot.");
+                        location.reload();
+                    }
+                }
+            });
+
+            // C. Tabrak P2 (Multiplayer)
+            if(isMultiplayer && p2.alive) {
+                // Player tabrak P2 (Player Mati)
+                for(let i=1; i<p2.segments.length; i++) {
+                    let s = p2.segments[i];
+                    let dx = head.x - s.x, dy = head.y - s.y;
+                    if(Math.sqrt(dx*dx+dy*dy) < p1.radius + p2.radius) {
+                        p1.die();
+                        alert("KAMU KALAH! Menabrak lawan.");
+                        location.reload();
+                    }
+                }
+            }
+        }
+
+        // --- JOYSTICK LOGIC ---
+        let joyActive = false;
+        const joyBase = document.getElementById('joy-base');
+        const joyStick = document.getElementById('joy-stick');
+        const baseRect = joyBase.getBoundingClientRect();
+        const centerX = baseRect.left + baseRect.width/2;
+        const centerY = baseRect.top + baseRect.height/2;
+
+        joyBase.addEventListener('touchstart', () => joyActive = true);
+        window.addEventListener('touchmove', (e) => {
+            if(!joyActive || !p1.alive) return;
+            let t = e.touches[0];
+            let dx = t.clientX - centerX;
+            let dy = t.clientY - centerY;
+            p1.angle = Math.atan2(dy, dx);
+            let dist = Math.min(Math.sqrt(dx*dx+dy*dy), 50);
+            joyStick.style.transform = `translate(${Math.cos(p1.angle)*dist}px, ${Math.sin(p1.angle)*dist}px)`;
+        });
+        window.addEventListener('touchend', () => { joyActive = false; joyStick.style.transform = `translate(0,0)`; });
+
+        // --- MULTIPLAYER LOGIC ---
+        function generateID() { return Math.floor(1000 + Math.random() * 9000); }
+
+        function showHostUI() {
+            document.getElementById('lobby-menu').classList.add('hidden');
+            document.getElementById('host-ui').classList.remove('hidden');
+            let id = generateID();
+            document.getElementById('host-id').innerText = id;
+            
+            peer = new Peer('snake-mabar-' + id);
+            peer.on('open', () => isHost = true);
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+                conn.on('open', () => startGame(true));
+            });
+        }
+
+        function showJoinUI() {
+            document.getElementById('lobby-menu').classList.add('hidden');
+            document.getElementById('join-ui').classList.remove('hidden');
+        }
+
+        function joinGame() {
+            let id = document.getElementById('room-input').value;
+            if(!id) return;
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect('snake-mabar-' + id);
+                setupConnection();
+                conn.on('open', () => startGame(true));
+            });
+        }
+
+        function setupConnection() {
+            conn.on('data', (data) => p2.sync(data));
+        }
+
+        function startGame(multiplayerMode) {
+            isMultiplayer = multiplayerMode;
+            document.getElementById('lobby-screen').classList.add('hidden');
+            gameActive = true;
+            initGame();
+            
+            if(isMultiplayer) {
+                document.getElementById('p2-stat').classList.remove('hidden');
+                // Atur warna biar beda
+                if(!isHost) {
+                    p1.color = "#ff0055"; // Joiner jadi merah
+                    p2.color = saveData.activeSkin;
+                }
+            }
+            gameLoop();
+        }
+
+        function backToLobby() {
+            document.querySelectorAll('#lobby-screen > div > div').forEach(d => {
+                if(d.id === 'lobby-menu') d.classList.remove('hidden');
+                else d.classList.add('hidden');
+            });
+        }
+
+        // --- SHOP & QUEST SYSTEM ---
+        function openModal(id) {
+            document.getElementById(id + '-modal').classList.remove('hidden');
+            if(id === 'shop') renderShop();
+            if(id === 'quest') renderQuest();
+        }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'lobby-screen') m.classList.add('hidden'); }); }
+
+        function renderShop() {
+            let html = '';
+            skins.forEach(s => {
+                let own = saveData.ownedSkins.includes(s.c);
+                let active = saveData.activeSkin === s.c;
+                html += `
+                <div class="item-card ${active?'active':''}" onclick="buySkin('${s.c}', ${s.p})">
+                    <div style="background:${s.c};width:30px;height:30px;border-radius:50%;margin:0 auto 10px;box-shadow:0 0 10px ${s.c}"></div>
+                    <div>${s.n}</div>
+                    <small>${own ? (active ? 'DIPAKAI' : 'MILIK') : '💰 '+s.p}</small>
+                </div>`;
+            });
+            document.getElementById('skin-list').innerHTML = html;
+        }
+
+        function buySkin(c, p) {
+            if(saveData.ownedSkins.includes(c)) {
+                saveData.activeSkin = c; p1.color = c;
+            } else if(saveData.coins >= p) {
+                saveData.coins -= p; saveData.ownedSkins.push(c); saveData.activeSkin = c; p1.color = c;
+                vibrate(100);
+            }
+            saveGame(); updateUIStats(); renderShop();
+        }
+
+        function renderQuest() {
+            let html = '';
+            questData.tasks.forEach(t => {
+                let pct = (t.cur / t.target) * 100; if(pct>100) pct=100;
+                let canClaim = t.cur >= t.target && !t.done;
+                html += `
+                <div class="quest-item">
+                    <div style="display:flex;justify-content:space-between">
+                        <span>${t.txt}</span>
+                        <span>${t.cur}/${t.target}</span>
+                    </div>
+                    <div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    <button class="btn-big ${canClaim?'btn-primary':'btn-secondary'}" 
+                        onclick="claimQuest(${t.id})" ${!canClaim?'disabled':''} 
+                        style="padding:5px; margin-top:5px; font-size:12px">
+                        ${t.done ? 'SELESAI' : (canClaim ? 'AMBIL 💰'+t.reward : 'PROGRES')}
+                    </button>
+                </div>`;
+            });
+            document.getElementById('quest-list').innerHTML = html;
+        }
+
+        function updateQuest(id, amt) {
+            let t = questData.tasks.find(q => q.id === id);
+            if(t && !t.done) {
+                t.cur += amt; if(t.cur > t.target) t.cur = t.target;
+                saveQuests();
+            }
+        }
+
+        function claimQuest(id) {
+            let t = questData.tasks.find(q => q.id === id);
+            if(t && t.cur >= t.target && !t.done) {
+                t.done = true;
+                saveData.coins += t.reward;
+                vibrate(200);
+                saveGame(); saveQuests(); renderQuest(); updateUIStats();
+            }
+        }
+
+        // --- UTILS ---
+        function saveGame() { localStorage.setItem('snake_pro_data', JSON.stringify(saveData)); }
+        function saveQuests() { localStorage.setItem('snake_pro_quests', JSON.stringify(questData)); }
+        function updateUIStats() {
+            document.getElementById('lvl').innerText = saveData.lvl;
+            document.getElementById('xp').innerText = Math.floor((saveData.xp/(saveData.lvl*100))*100);
+            document.getElementById('coins').innerText = saveData.coins;
+        }
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            let gridSize = 100;
+            let ox = -viewport.x % gridSize, oy = -viewport.y % gridSize;
+            for(let x=ox; x<canvas.width; x+=gridSize) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+            for(let y=oy; y<canvas.height; y+=gridSize) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+            ctx.strokeStyle = 'red'; ctx.lineWidth = 5;
+            ctx.strokeRect(0-viewport.x, 0-viewport.y, WORLD_SIZE, WORLD_SIZE);
+        }
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    </script>
+</body>
+</html>
