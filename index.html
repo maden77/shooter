@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cacing Arena Ultimate</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon2048-192x192.png" sizes="192x192">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
-    
     <style>
         * {
             margin: 0;
@@ -20,7 +17,7 @@
         body {
             background: #000;
             color: white;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -28,10 +25,10 @@
         
         canvas {
             display: block;
-            background: #050515;
+            background: linear-gradient(135deg, #050515 0%, #0a0a1a 100%);
         }
         
-        /* LOADING SCREEN */
+        /* LOADING */
         #loading {
             position: fixed;
             top: 0;
@@ -47,8 +44,8 @@
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border: 5px solid rgba(168, 85, 247, 0.3);
             border-top: 5px solid #a855f7;
             border-radius: 50%;
@@ -61,7 +58,222 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* MODALS */
+        /* MAIN MENU */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .menu-card {
+            background: linear-gradient(145deg, #0a0a1a, #050515);
+            padding: 30px;
+            border-radius: 25px;
+            border: 3px solid #a855f7;
+            text-align: center;
+            width: 95%;
+            max-width: 450px;
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.4);
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .game-title {
+            font-size: 2.8rem;
+            color: #a855f7;
+            margin-bottom: 5px;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+            background: linear-gradient(45deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .game-subtitle {
+            color: #94a3b8;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+        
+        .player-info {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.05));
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        .player-id {
+            font-size: 2.2rem;
+            color: #ffd700;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin: 10px 0;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .btn-shop {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+        
+        /* GAME UI */
+        #game-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .stats-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 2px solid #a855f7;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .stat-value {
+            color: #ffd700;
+            font-size: 1.3rem;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        /* JOYSTICK */
+        #joystick-container {
+            position: absolute;
+            bottom: 90px;
+            left: 90px;
+            width: 140px;
+            height: 140px;
+            pointer-events: auto;
+        }
+        
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15), transparent 70%);
+            border-radius: 50%;
+            border: 3px solid rgba(168, 85, 247, 0.4);
+            position: relative;
+        }
+        
+        #joystick-handle {
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            border-radius: 50%;
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+        }
+        
+        /* MULTIPLAYER UI */
+        .multiplayer-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid #22c55e;
+            backdrop-filter: blur(10px);
+            max-width: 200px;
+        }
+        
+        .player-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .player-badge {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #a855f7;
+        }
+        
+        /* SHOP MODAL */
         .modal {
             position: fixed;
             top: 0;
@@ -72,296 +284,122 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            padding: 15px;
-        }
-        
-        .modal-content {
-            background: linear-gradient(145deg, #0a0a1a, #050515);
-            padding: 25px;
-            border-radius: 20px;
-            border: 2px solid #a855f7;
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 0 50px rgba(168, 85, 247, 0.4);
-            animation: modalSlide 0.3s ease;
-        }
-        
-        @keyframes modalSlide {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        h1, h2, h3 {
-            color: #a855f7;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 10px;
-            border: 1px solid #444;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            text-align: center;
-        }
-        
-        button {
-            width: 100%;
-            padding: 14px;
-            margin: 6px 0;
-            border-radius: 10px;
-            border: none;
-            background: #a855f7;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        button:hover {
-            background: #9333ea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .btn-gold {
-            background: linear-gradient(145deg, #ffd700, #ffaa00) !important;
-            color: #000 !important;
-            border: 2px solid #ffd700 !important;
-        }
-        
-        .btn-danger {
-            background: linear-gradient(145deg, #ef4444, #dc2626) !important;
-        }
-        
-        .btn-success {
-            background: linear-gradient(145deg, #22c55e, #16a34a) !important;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        /* GAME UI */
-        #ui {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 12px 18px;
-            border-radius: 12px;
-            border: 2px solid #a855f7;
-            font-size: 14px;
-            z-index: 100;
+            z-index: 2000;
+            padding: 20px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
         
-        .ui-stat {
-            margin: 0 8px;
-            color: #fff;
-        }
-        
-        .ui-stat .value {
-            color: #ffd700;
-            font-weight: bold;
-        }
-        
-        /* JOYSTICK */
-        #joy-area {
-            position: fixed;
-            bottom: 70px;
-            left: 70px;
-            width: 120px;
-            height: 120px;
-            z-index: 50;
-        }
-        
-        #joy-base {
-            width: 100%;
-            height: 100%;
-            background: rgba(168, 85, 247, 0.15);
-            border-radius: 50%;
-            border: 2px solid rgba(168, 85, 247, 0.4);
-            position: relative;
-        }
-        
-        #joy-stick {
-            position: absolute;
-            top: 25px;
-            left: 25px;
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(145deg, #a855f7, #9333ea);
-            border-radius: 50%;
-            transition: transform 0.1s;
-            box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
-        }
-        
-        /* SKIN SHOP */
-        .skin-grid {
+        .shop-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .skin-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-        
-        .skin-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
-        }
-        
-        .skin-item.active {
-            border-color: #a855f7;
-            background: rgba(168, 85, 247, 0.1);
-        }
-        
-        .skin-preview {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin: 0 auto 5px;
-            border: 2px solid white;
-        }
-        
-        .skin-name {
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-        
-        .skin-price {
-            font-size: 10px;
-            color: #ffd700;
-        }
-        
-        .skin-owned {
-            font-size: 10px;
-            color: #22c55e;
-        }
-        
-        /* MULTIPLAYER UI */
-        .player-list {
-            margin: 10px 0;
-            max-height: 150px;
+            gap: 15px;
+            margin: 20px 0;
+            max-height: 400px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
             padding: 10px;
         }
         
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            margin: 4px 0;
+        .shop-item {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border-left: 3px solid #a855f7;
-        }
-        
-        .connection-status {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .connected { background: #22c55e; }
-        .disconnected { background: #ef4444; }
-        
-        /* WEAPON SHOP */
-        .weapon-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .weapon-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 15px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             border: 2px solid transparent;
+            text-align: center;
         }
         
-        .weapon-item:hover {
+        .shop-item:hover {
             background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
         }
         
-        .weapon-item.active {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
+        .shop-item.active {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
         }
         
-        .weapon-icon {
-            font-size: 24px;
+        .item-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        
+        .item-name {
+            font-size: 0.9rem;
+            font-weight: bold;
             margin-bottom: 5px;
         }
         
-        /* DAILY REWARD */
-        .reward-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin: 15px 0;
+        .item-price {
+            font-size: 0.8rem;
+            color: #ffd700;
         }
         
-        .reward-day {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
+        /* NOTIFICATIONS */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 5px solid #a855f7;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease, slideOutRight 0.3s ease 2.7s;
+            max-width: 300px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
         
-        .reward-day.claimed {
-            background: rgba(34, 197, 94, 0.2);
-            border: 2px solid #22c55e;
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
-        .reward-day.today {
-            background: rgba(168, 85, 247, 0.2);
-            border: 2px solid #a855f7;
-            animation: pulse 2s infinite;
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
         
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .menu-card {
+                padding: 20px;
+            }
+            
+            .game-title {
+                font-size: 2.2rem;
+            }
+            
+            .stats-bar {
+                top: 10px;
+                left: 10px;
+                padding: 10px 15px;
+                gap: 15px;
+                font-size: 0.9rem;
+            }
+            
+            #joystick-container {
+                bottom: 60px;
+                left: 60px;
+                width: 120px;
+                height: 120px;
+            }
+            
+            #joystick-handle {
+                width: 60px;
+                height: 60px;
+                top: 30px;
+                left: 30px;
+            }
+            
+            .shop-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
-        /* SCROLLBAR STYLING */
+        /* SCROLLBAR */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -376,59 +414,9 @@
             border-radius: 10px;
         }
         
-        /* MOBILE OPTIMIZATION */
-        @media (max-width: 768px) {
-            .modal-content {
-                padding: 20px;
-                max-width: 95%;
-            }
-            
-            #ui {
-                font-size: 12px;
-                padding: 8px 12px;
-                top: 10px;
-                left: 10px;
-            }
-            
-            #joy-area {
-                bottom: 50px;
-                left: 50px;
-                width: 100px;
-                height: 100px;
-            }
-            
-            #joy-stick {
-                width: 60px;
-                height: 60px;
-                top: 20px;
-                left: 20px;
-            }
-        }
-        
-        /* NOTIFICATIONS */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            border-left: 5px solid #a855f7;
-            z-index: 1000;
-            animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
-            max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+        /* HIDDEN */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -436,281 +424,481 @@
     <!-- LOADING SCREEN -->
     <div id="loading">
         <div class="spinner"></div>
-        <div style="color: #a855f7; margin-top: 10px; font-size: 14px;">Loading Game...</div>
+        <div style="color: #a855f7; margin-top: 15px; font-size: 1.2rem;">Loading Cacing Arena...</div>
     </div>
     
-    <!-- MAIN LOBBY -->
-    <div id="lobby" class="modal">
-        <div class="modal-content">
-            <h1>🐍 CACING ARENA ULTIMATE</h1>
-            <p style="color: #888; margin-bottom: 20px; font-size: 12px;">World: Infinite | Mode: Player vs Bot</p>
+    <!-- MAIN MENU -->
+    <div id="main-menu" class="hidden">
+        <div class="menu-card">
+            <h1 class="game-title">🐍 CACING ARENA</h1>
+            <p class="game-subtitle">Ultimate Edition - Infinite World</p>
             
-            <input type="text" id="playerName" placeholder="Masukkan Nama Kamu" maxlength="12" value="Player">
-            
-            <div style="margin: 15px 0; padding: 12px; background: rgba(255, 215, 0, 0.1); border-radius: 10px; border: 1px dashed #ffd700;">
-                <p style="font-size: 11px; color: #aaa; margin: 0 0 5px 0;">🆔 ID PLAYER PERMANEN</p>
-                <p id="playerId" style="font-size: 24px; color: #ffd700; font-weight: bold; margin: 5px 0; letter-spacing: 4px;">0000</p>
-                <button onclick="copyPlayerId()" style="background: rgba(255, 215, 0, 0.2); font-size: 12px; padding: 6px 12px;">
+            <div class="player-info">
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">NAMA PLAYER</p>
+                <input type="text" id="player-name" placeholder="Masukkan Nama" 
+                       style="width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #a855f7; 
+                              background: rgba(0,0,0,0.5); color: white; text-align: center; font-size: 1.1rem;"
+                       value="Player">
+                
+                <p style="color: #94a3b8; font-size: 0.9rem; margin: 15px 0 5px 0;">ID PERMANEN</p>
+                <div class="player-id" id="player-id-display">0000</div>
+                <button class="btn btn-warning" onclick="copyPlayerId()" style="margin-top: 10px;">
                     📋 Salin ID
                 </button>
             </div>
             
-            <div style="margin: 10px 0; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; border: 1px solid #22c55e;">
-                <p style="font-size: 12px; margin: 0 0 5px 0; color: #22c55e;">🎁 REWARD HARIAN</p>
-                <button onclick="claimDailyReward()" style="background: #22c55e; font-size: 14px; padding: 10px;">
-                    🎯 KLIK UNTUK HADIAH
+            <div style="margin: 20px 0;">
+                <button class="btn btn-primary" onclick="startSoloGame()">
+                    🎮 MAIN SOLO
+                </button>
+                
+                <button class="btn btn-success" onclick="showMultiplayerMenu()">
+                    👥 MABAR 1 WIFI
+                </button>
+                
+                <button class="btn btn-shop" onclick="openShop()">
+                    🛒 TOKO SKIN
+                </button>
+                
+                <button class="btn btn-warning" onclick="claimDailyReward()">
+                    🎁 REWARD HARIAN
                 </button>
             </div>
             
-            <button onclick="startSoloGame()" class="btn-gold">🎮 MAIN SOLO</button>
-            <button onclick="showMultiplayerMenu()" style="background: #3b82f6; margin-top: 8px;">👥 MABAR (WiFi)</button>
-            <button onclick="openShop()" style="background: #8b5cf6; margin-top: 8px;">🛒 TOKO SKIN</button>
-            <button onclick="openWeaponShop()" style="background: #ef4444; margin-top: 8px;">⚔️ TOKO SENJATA</button>
-            
             <!-- MULTIPLAYER MENU (HIDDEN) -->
-            <div id="multiplayerMenu" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                <h3 style="color: #3b82f6;">👥 MODE MABAR</h3>
-                <p style="font-size: 12px; color: #888; margin-bottom: 10px;">Sambungkan ke WiFi yang sama dengan teman!</p>
-                
-                <div style="margin: 10px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
-                    <p style="font-size: 12px; color: #3b82f6; margin-bottom: 5px;">Status: <span id="connectionStatus">❌ Tidak Terhubung</span></p>
-                    <div id="playerList" class="player-list">
-                        <!-- Player list will appear here -->
-                    </div>
+            <div id="multiplayer-menu" class="hidden">
+                <div style="margin: 20px 0; padding: 15px; background: rgba(34, 197, 94, 0.1); 
+                          border-radius: 12px; border: 2px solid #22c55e;">
+                    <p style="color: #22c55e; font-weight: bold; margin-bottom: 10px;">🎮 MODE MABAR</p>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">
+                        Sambungkan ke WiFi yang sama dengan teman!
+                    </p>
+                    
+                    <div id="player-list-container" class="player-list"></div>
+                    
+                    <button class="btn btn-warning" onclick="createRoom()" style="margin: 10px 0;">
+                        🏠 BUAT ROOM BARU
+                    </button>
+                    
+                    <input type="text" id="room-code-input" placeholder="Masukkan Kode Room (4 digit)" 
+                           maxlength="4" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px;
+                           border: 2px solid #3b82f6; background: rgba(0,0,0,0.5); color: white; text-align: center;">
+                    
+                    <button class="btn" onclick="joinRoom()" 
+                            style="background: linear-gradient(135deg, #3b82f6, #2563eb); margin: 5px 0;">
+                        🔗 GABUNG ROOM
+                    </button>
+                    
+                    <button class="btn" onclick="backToMainMenu()" 
+                            style="background: rgba(255,255,255,0.1); margin-top: 10px;">
+                        ← KEMBALI
+                    </button>
                 </div>
-                
-                <button onclick="createRoom()" style="background: #f59e0b;">🏠 BUAT ROOM BARU</button>
-                <input type="text" id="roomCode" placeholder="Masukkan Kode Room (4 digit)" maxlength="4" style="margin: 10px 0;">
-                <button onclick="joinRoom()" style="background: #10b981;">🔗 GABUNG ROOM</button>
-                <button onclick="backToLobby()" style="background: #6b7280; margin-top: 10px;">← KEMBALI</button>
             </div>
         </div>
     </div>
     
     <!-- SHOP MODAL -->
-    <div id="shopModal" class="modal hidden">
-        <div class="modal-content">
-            <h2>🛒 TOKO SKIN</h2>
-            <p style="color: #ffd700; margin-bottom: 15px; font-size: 18px;">🪙 Koin: <span id="coinCount">0</span></p>
+    <div id="shop-modal" class="modal hidden">
+        <div class="menu-card">
+            <h2 style="color: #ffd700; margin-bottom: 10px;">🛒 TOKO SKIN</h2>
+            <p style="color: #94a3b8; margin-bottom: 15px;">Koin: <span id="coin-display" style="color: #ffd700; font-weight: bold;">0</span></p>
             
-            <div id="skinGrid" class="skin-grid">
+            <div id="skin-grid" class="shop-grid">
                 <!-- Skins will be loaded here -->
             </div>
             
-            <button onclick="closeShop()" style="background: #6b7280; margin-top: 15px;">✕ TUTUP</button>
+            <button class="btn" onclick="closeShop()" 
+                    style="background: rgba(255,255,255,0.1); margin-top: 20px;">
+                ✕ TUTUP
+            </button>
         </div>
     </div>
     
-    <!-- WEAPON SHOP MODAL -->
-    <div id="weaponShopModal" class="modal hidden">
-        <div class="modal-content">
-            <h2>⚔️ TOKO SENJATA</h2>
-            <p style="color: #ffd700; margin-bottom: 15px; font-size: 18px;">🪙 Koin: <span id="weaponCoinCount">0</span></p>
+    <!-- DAILY REWARD MODAL -->
+    <div id="reward-modal" class="modal hidden">
+        <div class="menu-card">
+            <h2 style="color: #22c55e; margin-bottom: 10px;">🎁 REWARD HARIAN</h2>
+            <p style="color: #94a3b8; margin-bottom: 15px;">Streak: <span id="streak-display" style="color: #ffd700; font-weight: bold;">0</span> hari</p>
             
-            <div id="weaponGrid" class="weapon-grid">
-                <!-- Weapons will be loaded here -->
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin: 20px 0;">
+                <div class="reward-day" data-day="1">Hari 1<br><span style="color: #ffd700;">100🪙</span></div>
+                <div class="reward-day" data-day="2">Hari 2<br><span style="color: #ffd700;">150🪙</span></div>
+                <div class="reward-day" data-day="3">Hari 3<br><span style="color: #ffd700;">200🪙</span></div>
+                <div class="reward-day" data-day="4">Hari 4<br><span style="color: #ffd700;">250🪙</span></div>
+                <div class="reward-day" data-day="5">Hari 5<br><span style="color: #ffd700;">300🪙</span></div>
+                <div class="reward-day" data-day="6">Hari 6<br><span style="color: #ffd700;">400🪙</span></div>
+                <div class="reward-day" data-day="7">Hari 7<br><span style="color: #ffd700;">500🪙</span></div>
             </div>
             
-            <button onclick="closeWeaponShop()" style="background: #6b7280; margin-top: 15px;">✕ TUTUP</button>
-        </div>
-    </div>
-    
-    <!-- GAME OVER MODAL -->
-    <div id="gameOverModal" class="modal hidden">
-        <div class="modal-content">
-            <h2 style="color: #ef4444;">💀 GAME OVER!</h2>
-            <div style="margin: 20px 0;">
-                <p style="margin: 8px 0;">🏆 Skor: <span id="finalScore" style="color: #ffd700;">0</span></p>
-                <p style="margin: 8px 0;">📏 Panjang: <span id="finalLength" style="color: #a855f7;">0</span></p>
-                <p style="margin: 8px 0;">⚔️ Bot Dimakan: <span id="finalKills" style="color: #22c55e;">0</span></p>
-                <p style="margin: 8px 0;">🪙 Koin Didapat: <span id="finalCoins" style="color: #fbbf24;">0</span></p>
-            </div>
-            <button onclick="restartGame()" class="btn-success">🔄 MAIN LAGI</button>
+            <button class="btn btn-success" onclick="claimReward()" style="margin: 10px 0;">
+                🎯 KLIK UNTUK HADIAH
+            </button>
+            
+            <button class="btn" onclick="closeReward()" 
+                    style="background: rgba(255,255,255,0.1); margin-top: 10px;">
+                ✕ TUTUP
+            </button>
         </div>
     </div>
     
     <!-- GAME UI -->
-    <div id="gameUI" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99;">
-        <div id="ui">
-            <span class="ui-stat">🪙 <span id="coinsDisplay">0</span></span>
-            <span class="ui-stat">📏 <span id="lengthDisplay">15</span></span>
-            <span class="ui-stat">⚔️ <span id="killsDisplay">0</span></span>
-            <span class="ui-stat">🍎 <span id="foodsDisplay">0</span></span>
+    <div id="game-ui" class="hidden">
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span style="color: #a855f7;">🪙</span>
+                <span id="coins-display">0</span>
+            </div>
+            <div class="stat-item">
+                <span style="color: #22c55e;">📏</span>
+                <span id="length-display">15</span>
+            </div>
+            <div class="stat-item">
+                <span style="color: #ef4444;">⚔️</span>
+                <span id="kills-display">0</span>
+            </div>
+            <div class="stat-item">
+                <span style="color: #f59e0b;">🏆</span>
+                <span id="score-display">0</span>
+            </div>
         </div>
         
-        <!-- MENU BUTTONS -->
-        <div style="position: fixed; top: 15px; right: 15px; pointer-events: auto;">
-            <button onclick="pauseGame()" style="width: auto; padding: 8px 15px; background: rgba(0,0,0,0.7); border: 1px solid #a855f7;">
-                ⏸️ Pause
-            </button>
+        <div class="multiplayer-info hidden" id="multiplayer-ui">
+            <p style="color: #22c55e; font-weight: bold; margin-bottom: 5px;">👥 ROOM: <span id="room-code-display">0000</span></p>
+            <div id="player-list-game" class="player-list"></div>
         </div>
         
-        <!-- JOYSTICK -->
-        <div id="joy-area">
-            <div id="joy-base">
-                <div id="joy-stick"></div>
+        <div id="joystick-container">
+            <div id="joystick-base">
+                <div id="joystick-handle"></div>
             </div>
         </div>
     </div>
     
     <!-- GAME CANVAS -->
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="game-canvas"></canvas>
 
     <script>
         // =============================================
-        // GAME VARIABLES
+        // INITIALIZATION
         // =============================================
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         
         // Game state
         let gameActive = false;
-        let gamePaused = false;
-        let gameMode = 'solo';
+        let gameMode = 'solo'; // 'solo', 'host', 'client'
         let player = null;
         let foods = [];
         let bots = [];
         let viewport = { x: 0, y: 0 };
-        let currentKills = 0;
-        let currentCoins = 0;
-        let totalFoods = 0;
-        
-        // Multiplayer
-        let peer = null;
-        let conn = null;
-        let isHost = false;
-        let roomCode = '';
-        let multiplayerPlayers = {};
+        let stats = {
+            coins: 0,
+            length: 15,
+            kills: 0,
+            score: 0
+        };
         
         // Player data
         let playerData = {
-            id: localStorage.getItem('cacingPlayerId'),
-            name: localStorage.getItem('cacingPlayerName') || 'Player',
-            coins: parseInt(localStorage.getItem('cacingCoins')) || 0,
-            skins: JSON.parse(localStorage.getItem('cacingSkins')) || ['#a855f7', '#3b82f6'],
-            activeSkin: localStorage.getItem('cacingActiveSkin') || '#a855f7',
-            weapons: JSON.parse(localStorage.getItem('cacingWeapons')) || ['normal'],
-            activeWeapon: localStorage.getItem('cacingActiveWeapon') || 'normal',
-            highScore: parseInt(localStorage.getItem('cacingHighScore')) || 0,
-            totalKills: parseInt(localStorage.getItem('cacingTotalKills')) || 0,
-            dailyRewards: JSON.parse(localStorage.getItem('cacingDailyRewards')) || {
+            id: localStorage.getItem('cacing_player_id'),
+            name: localStorage.getItem('cacing_player_name') || 'Player',
+            coins: parseInt(localStorage.getItem('cacing_coins')) || 0,
+            skins: JSON.parse(localStorage.getItem('cacing_skins')) || ['default', 'purple'],
+            activeSkin: localStorage.getItem('cacing_active_skin') || 'purple',
+            dailyRewards: JSON.parse(localStorage.getItem('cacing_daily_rewards')) || {
                 lastClaim: null,
                 streak: 0
             }
         };
         
-        // Skin options
-        const skinOptions = [
-            { id: 'purple', name: 'Purple', color: '#a855f7', price: 0 },
-            { id: 'blue', name: 'Blue', color: '#3b82f6', price: 100 },
-            { id: 'green', name: 'Green', color: '#22c55e', price: 150 },
-            { id: 'red', name: 'Red', color: '#ef4444', price: 200 },
-            { id: 'orange', name: 'Orange', color: '#f97316', price: 250 },
-            { id: 'pink', name: 'Pink', color: '#ec4899', price: 300 },
-            { id: 'gold', name: 'Gold', color: '#ffd700', price: 500 },
-            { id: 'rainbow', name: 'Rainbow', color: 'linear-gradient(45deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #0000ff)', price: 1000 },
-            { id: 'neon', name: 'Neon', color: '#00ff88', price: 800 },
-            { id: 'galaxy', name: 'Galaxy', color: 'linear-gradient(45deg, #000428, #004e92)', price: 1200 }
-        ];
+        // Multiplayer
+        let peer = null;
+        let connections = [];
+        let roomPlayers = [];
+        let roomCode = '';
         
-        // Weapon options
-        const weaponOptions = [
-            { id: 'normal', name: 'Normal', icon: '🐍', damage: 1, speed: 1, price: 0, description: 'Standar snake' },
-            { id: 'speedy', name: 'Speedy', icon: '⚡', damage: 1, speed: 1.5, price: 500, description: '30% lebih cepat' },
-            { id: 'strong', name: 'Strong', icon: '💪', damage: 2, speed: 0.8, price: 800, description: '2x damage ke bot' },
-            { id: 'magnet', name: 'Magnet', icon: '🧲', damage: 1, speed: 1, price: 1200, description: 'Tarik makanan dari jauh' },
-            { id: 'shield', name: 'Shield', icon: '🛡️', damage: 1, speed: 1, price: 1500, description: 'Tahan 1x tabrakan' },
-            { id: 'laser', name: 'Laser', icon: '🔫', damage: 3, speed: 1, price: 2000, description: '3x damage, range jauh' }
+        // Skin options
+        const skins = [
+            { id: 'default', name: 'Default', color: '#a855f7', price: 0, emoji: '🐍' },
+            { id: 'green', name: 'Green', color: '#22c55e', price: 100, emoji: '🐉' },
+            { id: 'red', name: 'Red', color: '#ef4444', price: 150, emoji: '🔥' },
+            { id: 'blue', name: 'Blue', color: '#3b82f6', price: 200, emoji: '💧' },
+            { id: 'gold', name: 'Gold', color: '#ffd700', price: 500, emoji: '⭐' },
+            { id: 'rainbow', name: 'Rainbow', color: 'linear-gradient(45deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff)', price: 1000, emoji: '🌈' },
+            { id: 'neon', name: 'Neon', color: '#00ff88', price: 800, emoji: '💫' }
         ];
         
         // =============================================
-        // INITIALIZATION
+        // INITIALIZE GAME
         // =============================================
         function init() {
-            // Set canvas size
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+            console.log('Initializing Cacing Arena...');
             
-            // Initialize player ID if not exists
+            // Initialize player ID
             if (!playerData.id) {
                 playerData.id = Math.floor(1000 + Math.random() * 9000).toString();
-                localStorage.setItem('cacingPlayerId', playerData.id);
+                localStorage.setItem('cacing_player_id', playerData.id);
             }
             
             // Update UI
-            document.getElementById('playerId').textContent = playerData.id;
-            document.getElementById('playerName').value = playerData.name;
-            document.getElementById('coinCount').textContent = playerData.coins;
-            document.getElementById('weaponCoinCount').textContent = playerData.coins;
+            document.getElementById('player-id-display').textContent = playerData.id;
+            document.getElementById('player-name').value = playerData.name;
+            document.getElementById('coin-display').textContent = playerData.coins;
             
-            // Initialize skins shop
-            initSkinShop();
-            initWeaponShop();
+            // Initialize multiplayer
+            initMultiplayer();
+            
+            // Initialize shop
+            initShop();
             
             // Hide loading screen
             setTimeout(() => {
                 document.getElementById('loading').classList.add('hidden');
-                document.getElementById('lobby').classList.remove('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
             }, 1000);
             
-            // Initialize PeerJS for multiplayer
-            initMultiplayer();
+            console.log('Game initialized successfully!');
         }
         
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // =============================================
+        // GAME CLASSES
+        // =============================================
+        class Snake {
+            constructor(x, y, skin, name, isBot = false, id = null) {
+                this.x = x;
+                this.y = y;
+                this.skin = skin;
+                this.name = name;
+                this.isBot = isBot;
+                this.id = id || Math.random().toString(36).substr(2, 9);
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = isBot ? 1.5 : 3.5;
+                this.radius = isBot ? 8 : 12;
+                this.alive = true;
+                this.score = 0;
+                this.segments = [];
+                this.color = this.getSkinColor(skin);
+                
+                // Create body
+                const length = isBot ? 10 : 15;
+                for (let i = 0; i < length; i++) {
+                    this.segments.push({
+                        x: this.x - i * 3,
+                        y: this.y
+                    });
+                }
+                
+                // Bot properties
+                if (isBot) {
+                    this.targetFood = null;
+                    this.turnTimer = 0;
+                }
+            }
+            
+            getSkinColor(skinId) {
+                const skin = skins.find(s => s.id === skinId) || skins[0];
+                return skin.color;
+            }
+            
+            update() {
+                if (!this.alive) return;
+                
+                // Bot AI
+                if (this.isBot) {
+                    this.updateBot();
+                }
+                
+                // Move (infinite world)
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                
+                // Update segments
+                this.segments.unshift({ x: this.x, y: this.y });
+                if (this.segments.length > 100) {
+                    this.segments.pop();
+                }
+            }
+            
+            updateBot() {
+                this.turnTimer--;
+                
+                // Find food
+                if (this.turnTimer <= 0 || !this.targetFood) {
+                    let closestFood = null;
+                    let closestDist = Infinity;
+                    
+                    for (const food of foods) {
+                        const dist = Math.hypot(this.x - food.x, this.y - food.y);
+                        if (dist < closestDist && dist < 800) {
+                            closestDist = dist;
+                            closestFood = food;
+                        }
+                    }
+                    
+                    this.targetFood = closestFood;
+                    this.turnTimer = 40 + Math.random() * 40;
+                }
+                
+                // Move towards food or random
+                if (this.targetFood) {
+                    const targetAngle = Math.atan2(
+                        this.targetFood.y - this.y,
+                        this.targetFood.x - this.x
+                    );
+                    
+                    let diff = targetAngle - this.angle;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    
+                    this.angle += diff * 0.08;
+                } else {
+                    // Random movement
+                    this.angle += (Math.random() - 0.5) * 0.15;
+                }
+                
+                // Avoid player if too close
+                if (player && player.alive && !this.isBot) {
+                    const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
+                    if (distToPlayer < 200) {
+                        const runAngle = Math.atan2(this.y - player.y, this.x - player.x);
+                        let diff = runAngle - this.angle;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        
+                        this.angle += diff * 0.1;
+                    }
+                }
+            }
+            
+            draw() {
+                if (!this.alive) return;
+                
+                // Draw body with gradient effect
+                ctx.save();
+                
+                // Body with gradient
+                ctx.lineWidth = 16;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                if (this.color.includes('gradient')) {
+                    // Handle gradient colors
+                    const gradient = ctx.createLinearGradient(
+                        this.segments[0].x - viewport.x,
+                        this.segments[0].y - viewport.y,
+                        this.segments[this.segments.length - 1].x - viewport.x,
+                        this.segments[this.segments.length - 1].y - viewport.y
+                    );
+                    
+                    if (this.color.includes('rainbow')) {
+                        gradient.addColorStop(0, '#ff0000');
+                        gradient.addColorStop(0.2, '#ffff00');
+                        gradient.addColorStop(0.4, '#00ff00');
+                        gradient.addColorStop(0.6, '#00ffff');
+                        gradient.addColorStop(0.8, '#0000ff');
+                        gradient.addColorStop(1, '#ff00ff');
+                    } else {
+                        gradient.addColorStop(0, this.color);
+                        gradient.addColorStop(1, this.color + 'aa');
+                    }
+                    
+                    ctx.strokeStyle = gradient;
+                } else {
+                    ctx.strokeStyle = this.color;
+                }
+                
+                // Draw body
+                ctx.beginPath();
+                for (let i = 0; i < this.segments.length; i++) {
+                    const seg = this.segments[i];
+                    if (i === 0) {
+                        ctx.moveTo(seg.x - viewport.x, seg.y - viewport.y);
+                    } else {
+                        ctx.lineTo(seg.x - viewport.x, seg.y - viewport.y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw head with glow
+                const head = this.segments[0];
+                ctx.fillStyle = this.isBot ? '#ff6666' : 'white';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Draw eyes
+                ctx.fillStyle = 'black';
+                const eyeOffset = 4;
+                ctx.beginPath();
+                ctx.arc(head.x - viewport.x - eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(head.x - viewport.x + eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw name
+                if (!this.isBot) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 25);
+                }
+                
+                ctx.restore();
+            }
         }
         
         // =============================================
         // GAME FUNCTIONS
         // =============================================
         function startSoloGame() {
-            playerData.name = document.getElementById('playerName').value.trim() || 'Player';
-            localStorage.setItem('cacingPlayerName', playerData.name);
+            playerData.name = document.getElementById('player-name').value.trim() || 'Player';
+            localStorage.setItem('cacing_player_name', playerData.name);
             
             gameMode = 'solo';
             startGame();
         }
         
         function startGame() {
-            // Hide menus
-            document.getElementById('lobby').classList.add('hidden');
-            document.getElementById('shopModal').classList.add('hidden');
-            document.getElementById('weaponShopModal').classList.add('hidden');
-            document.getElementById('gameOverModal').classList.add('hidden');
+            console.log('Starting game...');
             
-            // Show game UI
-            document.getElementById('gameUI').classList.remove('hidden');
+            // Hide menus
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
             
             // Reset game state
             gameActive = true;
-            gamePaused = false;
-            currentKills = 0;
-            currentCoins = 0;
-            totalFoods = 0;
-            foods = [];
-            bots = [];
-            
-            // Initialize player
-            const activeWeapon = weaponOptions.find(w => w.id === playerData.activeWeapon) || weaponOptions[0];
-            player = new Player(
-                0, 0,
+            player = new Snake(
+                canvas.width / 2,
+                canvas.height / 2,
                 playerData.activeSkin,
-                playerData.name,
-                activeWeapon
+                playerData.name
             );
             
-            // Initialize viewport
+            foods = [];
+            bots = [];
             viewport = { x: 0, y: 0 };
+            stats = { coins: 0, length: 15, kills: 0, score: 0 };
             
-            // Spawn initial food (lots of food!)
+            // Spawn LOTS of food
             for (let i = 0; i < 80; i++) {
                 spawnFood(true);
             }
             
             // Spawn bots
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 12; i++) {
                 spawnBot();
             }
             
@@ -721,20 +909,68 @@
             requestAnimationFrame(gameLoop);
         }
         
-        function gameLoop() {
-            if (!gameActive || gamePaused) return;
+        function spawnFood(initial = false) {
+            let x, y;
             
-            // Clear canvas with fade effect
+            if (initial) {
+                x = (Math.random() - 0.5) * 4000;
+                y = (Math.random() - 0.5) * 4000;
+            } else {
+                // Spawn near player
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 150 + Math.random() * 350;
+                x = player.x + Math.cos(angle) * distance;
+                y = player.y + Math.sin(angle) * distance;
+            }
+            
+            const foodTypes = [
+                { emoji: '🍎', color: '#ef4444', value: 5 },
+                { emoji: '🍌', color: '#fbbf24', value: 8 },
+                { emoji: '🍇', color: '#8b5cf6', value: 6 },
+                { emoji: '🍒', color: '#dc2626', value: 7 },
+                { emoji: '🥝', color: '#22c55e', value: 6 },
+                { emoji: '🍓', color: '#ec4899', value: 8 }
+            ];
+            
+            const food = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+            
+            foods.push({
+                x: x,
+                y: y,
+                emoji: food.emoji,
+                color: food.color,
+                value: food.value,
+                rotation: Math.random() * Math.PI * 2
+            });
+        }
+        
+        function spawnBot() {
+            const botColors = ['#ef4444', '#dc2626', '#b91c1c', '#991b1b'];
+            const color = botColors[Math.floor(Math.random() * botColors.length)];
+            
+            // Spawn bot away from player
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 250 + Math.random() * 350;
+            const x = player ? player.x + Math.cos(angle) * distance : 0;
+            const y = player ? player.y + Math.sin(angle) * distance : 0;
+            
+            bots.push(new Snake(x, y, 'default', 'Bot ' + (bots.length + 1), true));
+        }
+        
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            // Clear canvas with fade effect for smooth scroll
             ctx.fillStyle = 'rgba(5, 5, 21, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Update viewport to follow player
+            // Update viewport with smooth follow
             if (player && player.alive) {
-                viewport.x = player.x - canvas.width / 2;
-                viewport.y = player.y - canvas.height / 2;
+                viewport.x += (player.x - viewport.x - canvas.width / 2) * 0.1;
+                viewport.y += (player.y - viewport.y - canvas.height / 2) * 0.1;
             }
             
-            // Draw grid background
+            // Draw infinite grid
             drawGrid();
             
             // Update and draw player
@@ -742,38 +978,36 @@
                 player.update();
                 player.draw();
                 
-                // Check food collisions
+                // Check collisions
                 checkFoodCollisions();
-                
-                // Check bot collisions (player eats bot, not die!)
                 checkBotCollisions();
             }
             
             // Update and draw bots
-            bots.forEach((bot, index) => {
+            bots.forEach(bot => {
                 if (bot.alive) {
                     bot.update();
                     bot.draw();
                     
-                    // Bot vs Bot collisions (no damage)
-                    for (let j = index + 1; j < bots.length; j++) {
-                        if (bots[j].alive) {
-                            const dist = Math.hypot(bot.x - bots[j].x, bot.y - bots[j].y);
+                    // Bot vs Bot - no death, just bounce
+                    bots.forEach(otherBot => {
+                        if (bot !== otherBot && bot.alive && otherBot.alive) {
+                            const dist = Math.hypot(bot.x - otherBot.x, bot.y - otherBot.y);
                             if (dist < 20) {
-                                // Bots just bounce off each other
-                                const tempAngle = bot.angle;
-                                bot.angle = bots[j].angle;
-                                bots[j].angle = tempAngle;
+                                // Bounce
+                                const temp = bot.angle;
+                                bot.angle = otherBot.angle;
+                                otherBot.angle = temp;
                             }
                         }
-                    }
+                    });
                 }
             });
             
-            // Draw foods
+            // Draw foods with rotation
             drawFoods();
             
-            // Continue game loop
+            // Continue loop
             requestAnimationFrame(gameLoop);
         }
         
@@ -782,7 +1016,7 @@
             const startX = Math.floor(viewport.x / gridSize) * gridSize;
             const startY = Math.floor(viewport.y / gridSize) * gridSize;
             
-            ctx.strokeStyle = 'rgba(168, 85, 247, 0.05)';
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.03)';
             ctx.lineWidth = 1;
             
             // Vertical lines
@@ -806,94 +1040,17 @@
             foods.forEach(food => {
                 ctx.save();
                 ctx.translate(food.x - viewport.x, food.y - viewport.y);
-                food.rotation += 0.01;
+                food.rotation += 0.02; // Smooth rotation
                 ctx.rotate(food.rotation);
                 
-                // Draw different food types
                 ctx.fillStyle = food.color;
-                ctx.beginPath();
+                ctx.font = '28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(food.emoji, 0, 0);
                 
-                switch(food.type) {
-                    case 'apple':
-                        ctx.arc(0, 0, 10, 0, Math.PI * 2);
-                        // Stem
-                        ctx.fillStyle = '#22c55e';
-                        ctx.fillRect(-1.5, -12, 3, 4);
-                        break;
-                    case 'banana':
-                        ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
-                        break;
-                    case 'berry':
-                        ctx.arc(0, 0, 8, 0, Math.PI * 2);
-                        // Highlight
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                        ctx.beginPath();
-                        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
-                        ctx.fill();
-                        break;
-                    case 'coin':
-                        ctx.arc(0, 0, 8, 0, Math.PI * 2);
-                        ctx.fillStyle = '#ffd700';
-                        // Coin details
-                        ctx.fillStyle = '#ffaa00';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, 6, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = '#ffd700';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, 4, 0, Math.PI * 2);
-                        ctx.fill();
-                        break;
-                }
-                
-                ctx.fill();
                 ctx.restore();
             });
-        }
-        
-        function spawnFood(initial = false) {
-            let x, y;
-            
-            if (initial) {
-                // Random position in large world
-                x = (Math.random() - 0.5) * 5000;
-                y = (Math.random() - 0.5) * 5000;
-            } else {
-                // Spawn near player
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 100 + Math.random() * 400;
-                x = player.x + Math.cos(angle) * distance;
-                y = player.y + Math.sin(angle) * distance;
-            }
-            
-            const foodTypes = ['apple', 'banana', 'berry', 'coin'];
-            const foodColors = ['#ef4444', '#fbbf24', '#8b5cf6', '#ffd700'];
-            const typeIndex = Math.floor(Math.random() * foodTypes.length);
-            
-            foods.push({
-                x: x,
-                y: y,
-                type: foodTypes[typeIndex],
-                color: foodColors[typeIndex],
-                rotation: Math.random() * Math.PI * 2,
-                value: typeIndex === 3 ? 10 : 5 // Coin gives more points
-            });
-            
-            totalFoods++;
-            document.getElementById('foodsDisplay').textContent = totalFoods;
-        }
-        
-        function spawnBot() {
-            const botColors = ['#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d'];
-            const color = botColors[Math.floor(Math.random() * botColors.length)];
-            
-            // Spawn bot away from player
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 200 + Math.random() * 300;
-            const x = player ? player.x + Math.cos(angle) * distance : (Math.random() - 0.5) * 1000;
-            const y = player ? player.y + Math.sin(angle) * distance : (Math.random() - 0.5) * 1000;
-            
-            bots.push(new Bot(x, y, color, `Bot ${bots.length + 1}`));
         }
         
         function checkFoodCollisions() {
@@ -907,24 +1064,28 @@
                     // Eat food
                     foods.splice(i, 1);
                     
-                    // Add score and grow
-                    player.score += food.value;
-                    player.grow();
-                    
-                    // Add coins if it's a coin
-                    if (food.type === 'coin') {
-                        playerData.coins += 5;
-                        currentCoins += 5;
-                        playSound('coin');
-                    } else {
-                        playSound('eat');
+                    // Grow
+                    for (let j = 0; j < 3; j++) {
+                        const tail = player.segments[player.segments.length - 1];
+                        player.segments.push({ x: tail.x, y: tail.y });
                     }
+                    
+                    // Add stats
+                    playerData.coins += 3;
+                    stats.coins += 3;
+                    player.score += food.value;
+                    stats.score += food.value;
+                    stats.length = player.segments.length;
+                    
+                    // Play sound
+                    playSound('eat');
                     
                     // Spawn new food
                     spawnFood();
                     
                     // Update UI
                     updateGameUI();
+                    
                     break;
                 }
             }
@@ -933,473 +1094,113 @@
         function checkBotCollisions() {
             if (!player || !player.alive) return;
             
+            const head = player.segments[0];
+            
             for (let i = bots.length - 1; i >= 0; i--) {
                 const bot = bots[i];
                 if (!bot.alive) continue;
                 
-                // Check collision with bot's head
-                const distToHead = Math.hypot(player.x - bot.x, player.y - bot.y);
-                if (distToHead < player.radius + bot.radius) {
-                    // PLAYER EATS BOT (no death!)
-                    eatBot(bot, i);
+                // Check collision with bot
+                const dist = Math.hypot(head.x - bot.x, head.y - bot.y);
+                if (dist < player.radius + bot.radius) {
+                    // PLAYER EATS BOT
+                    eatBot(i);
                     return;
                 }
                 
-                // Check collision with bot's body
+                // Check collision with bot body
                 for (let j = 0; j < bot.segments.length; j++) {
                     const segment = bot.segments[j];
-                    const dist = Math.hypot(player.x - segment.x, player.y - segment.y);
+                    const bodyDist = Math.hypot(head.x - segment.x, head.y - segment.y);
                     
-                    if (dist < player.radius + 5) {
-                        // PLAYER EATS BOT (no death!)
-                        eatBot(bot, i);
+                    if (bodyDist < player.radius + 5) {
+                        eatBot(i);
                         return;
                     }
                 }
             }
         }
         
-        function eatBot(bot, index) {
+        function eatBot(botIndex) {
+            const bot = bots[botIndex];
+            
             // Bot dies
-            bot.die();
+            bot.alive = false;
             
-            // Remove bot from array
-            bots.splice(index, 1);
+            // Add rewards
+            playerData.coins += 25;
+            stats.coins += 25;
+            player.score += 75;
+            stats.score += 75;
+            stats.kills++;
             
-            // Add score and coins
-            const killReward = 50 * player.weapon.damage;
-            player.score += killReward;
-            playerData.coins += 20;
-            currentCoins += 20;
-            currentKills++;
-            playerData.totalKills++;
+            // Show notification
+            showNotification(`⚔️ BOT DIMAKAN! +75 poin`, '#22c55e');
             
-            // Play kill sound
+            // Play sound
             playSound('kill');
             
-            // Show kill effect
-            showNotification(`⚔️ BOT DIMAKAN! +${killReward} poin`, '#22c55e');
+            // Spawn food from dead bot
+            for (let i = 0; i < 5; i++) {
+                foods.push({
+                    x: bot.x + (Math.random() - 0.5) * 50,
+                    y: bot.y + (Math.random() - 0.5) * 50,
+                    emoji: '🍎',
+                    color: '#ef4444',
+                    value: 10,
+                    rotation: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Remove bot
+            bots.splice(botIndex, 1);
+            
+            // Update UI and save data
+            updateGameUI();
+            saveGameData();
             
             // Spawn new bot after delay
             setTimeout(() => {
                 if (gameActive && player.alive) {
                     spawnBot();
                 }
-            }, 2000);
-            
-            // Spawn food from dead bot
-            for (let i = 0; i < 8; i++) {
-                foods.push({
-                    x: bot.x + (Math.random() - 0.5) * 50,
-                    y: bot.y + (Math.random() - 0.5) * 50,
-                    type: 'coin',
-                    color: '#ffd700',
-                    rotation: Math.random() * Math.PI * 2,
-                    value: 10
-                });
-                totalFoods++;
-            }
-            
-            // Update UI
-            updateGameUI();
+            }, 3000);
         }
         
         function updateGameUI() {
             if (!player) return;
             
-            document.getElementById('coinsDisplay').textContent = playerData.coins;
-            document.getElementById('lengthDisplay').textContent = player.segments.length;
-            document.getElementById('killsDisplay').textContent = currentKills;
-            document.getElementById('foodsDisplay').textContent = totalFoods;
+            document.getElementById('coins-display').textContent = playerData.coins;
+            document.getElementById('length-display').textContent = player.segments.length;
+            document.getElementById('kills-display').textContent = stats.kills;
+            document.getElementById('score-display').textContent = player.score;
         }
         
-        // =============================================
-        // PLAYER CLASS
-        // =============================================
-        class Player {
-            constructor(x, y, color, name, weapon) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.name = name;
-                this.weapon = weapon;
-                this.angle = 0;
-                this.speed = 3 * weapon.speed;
-                this.radius = 12;
-                this.alive = true;
-                this.score = 0;
-                this.segments = [];
-                
-                // Create initial body
-                for (let i = 0; i < 15; i++) {
-                    this.segments.push({
-                        x: this.x - i * 2,
-                        y: this.y
-                    });
-                }
-                
-                // Weapon effects
-                this.magnetRange = weapon.id === 'magnet' ? 200 : 0;
-                this.hasShield = weapon.id === 'shield';
-                this.laserActive = weapon.id === 'laser';
-            }
-            
-            update() {
-                if (!this.alive) return;
-                
-                // Move (infinite world - no walls!)
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-                
-                // Update segments
-                this.segments.unshift({ x: this.x, y: this.y });
-                if (this.segments.length > 100) {
-                    this.segments.pop();
-                }
-                
-                // Check self collision
-                this.checkSelfCollision();
-                
-                // Magnet effect
-                if (this.magnetRange > 0) {
-                    this.attractFood();
-                }
-            }
-            
-            checkSelfCollision() {
-                const head = this.segments[0];
-                
-                // Check collision with own body (skip first 5 segments)
-                for (let i = 5; i < this.segments.length; i++) {
-                    const segment = this.segments[i];
-                    const dist = Math.hypot(head.x - segment.x, head.y - segment.y);
-                    
-                    if (dist < this.radius) {
-                        // If has shield, lose shield instead of dying
-                        if (this.hasShield) {
-                            this.hasShield = false;
-                            showNotification('🛡️ Shield habis!', '#ef4444');
-                            playSound('shield');
-                        } else {
-                            this.die();
-                        }
-                        return;
-                    }
-                }
-            }
-            
-            attractFood() {
-                for (let i = foods.length - 1; i >= 0; i--) {
-                    const food = foods[i];
-                    const dist = Math.hypot(this.x - food.x, this.y - food.y);
-                    
-                    if (dist < this.magnetRange) {
-                        // Move food towards player
-                        const angleToPlayer = Math.atan2(this.y - food.y, this.x - food.x);
-                        food.x += Math.cos(angleToPlayer) * 5;
-                        food.y += Math.sin(angleToPlayer) * 5;
-                    }
-                }
-            }
-            
-            grow() {
-                // Add 2-3 segments when eating
-                const segmentsToAdd = Math.floor(Math.random() * 2) + 2;
-                for (let i = 0; i < segmentsToAdd; i++) {
-                    const lastSegment = this.segments[this.segments.length - 1];
-                    this.segments.push({ x: lastSegment.x, y: lastSegment.y });
-                }
-            }
-            
-            die() {
-                if (!this.alive) return;
-                
-                this.alive = false;
-                gameActive = false;
-                
-                // Save game data
-                saveGameData();
-                
-                // Show game over screen
-                setTimeout(() => {
-                    document.getElementById('finalScore').textContent = this.score;
-                    document.getElementById('finalLength').textContent = this.segments.length;
-                    document.getElementById('finalKills').textContent = currentKills;
-                    document.getElementById('finalCoins').textContent = currentCoins;
-                    document.getElementById('gameOverModal').classList.remove('hidden');
-                    document.getElementById('gameUI').classList.add('hidden');
-                    
-                    // Play death sound
-                    playSound('death');
-                }, 500);
-            }
-            
-            draw() {
-                if (!this.alive) return;
-                
-                // Draw body with gradient
-                ctx.save();
-                
-                // Special effects based on weapon
-                if (this.laserActive) {
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = '#00ffff';
-                }
-                
-                if (this.hasShield) {
-                    ctx.strokeStyle = '#3b82f6';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(this.x - viewport.x, this.y - viewport.y, this.radius + 8, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-                
-                // Draw snake body
-                ctx.lineWidth = 16;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
-                // Create gradient for body
-                const gradient = ctx.createLinearGradient(
-                    this.segments[0].x - viewport.x, 
-                    this.segments[0].y - viewport.y,
-                    this.segments[this.segments.length - 1].x - viewport.x,
-                    this.segments[this.segments.length - 1].y - viewport.y
-                );
-                
-                if (this.color.includes('gradient')) {
-                    // Handle gradient colors
-                    ctx.strokeStyle = this.color;
-                } else {
-                    gradient.addColorStop(0, this.color);
-                    gradient.addColorStop(1, this.color + 'aa');
-                    ctx.strokeStyle = gradient;
-                }
-                
-                ctx.beginPath();
-                for (let i = 0; i < this.segments.length; i++) {
-                    const seg = this.segments[i];
-                    if (i === 0) {
-                        ctx.moveTo(seg.x - viewport.x, seg.y - viewport.y);
-                    } else {
-                        ctx.lineTo(seg.x - viewport.x, seg.y - viewport.y);
-                    }
-                }
-                ctx.stroke();
-                
-                // Draw head with eyes
-                const head = this.segments[0];
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw eyes
-                ctx.fillStyle = 'black';
-                const eyeOffset = 4;
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x - eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x + eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw weapon icon
-                ctx.fillStyle = 'white';
-                ctx.font = '20px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(this.weapon.icon, head.x - viewport.x, head.y - viewport.y - 25);
-                
-                // Draw player name
-                ctx.font = 'bold 14px Arial';
-                ctx.fillStyle = '#ffffff';
-                ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 45);
-                
-                ctx.restore();
-            }
-        }
-        
-        // =============================================
-        // BOT CLASS
-        // =============================================
-        class Bot {
-            constructor(x, y, color, name) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.name = name;
-                this.angle = Math.random() * Math.PI * 2;
-                this.speed = 1.2;
-                this.radius = 8;
-                this.alive = true;
-                this.segments = [];
-                this.targetFood = null;
-                this.turnTimer = 0;
-                
-                // Create initial body
-                for (let i = 0; i < 8; i++) {
-                    this.segments.push({
-                        x: this.x - i * 2,
-                        y: this.y
-                    });
-                }
-            }
-            
-            update() {
-                if (!this.alive) return;
-                
-                this.turnTimer--;
-                
-                // Find food
-                if (this.turnTimer <= 0 || !this.targetFood) {
-                    this.findFood();
-                    this.turnTimer = 30 + Math.random() * 30;
-                }
-                
-                // Move towards food or random
-                if (this.targetFood) {
-                    const targetAngle = Math.atan2(
-                        this.targetFood.y - this.y,
-                        this.targetFood.x - this.x
-                    );
-                    
-                    let diff = targetAngle - this.angle;
-                    while (diff > Math.PI) diff -= Math.PI * 2;
-                    while (diff < -Math.PI) diff += Math.PI * 2;
-                    
-                    this.angle += diff * 0.08;
-                } else {
-                    // Random movement
-                    this.angle += (Math.random() - 0.5) * 0.15;
-                }
-                
-                // Move
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-                
-                // Update segments
-                this.segments.unshift({ x: this.x, y: this.y });
-                if (this.segments.length > 25) {
-                    this.segments.pop();
-                }
-                
-                // Try to eat food
-                this.eatFood();
-                
-                // Avoid player if too close
-                if (player && player.alive) {
-                    const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
-                    if (distToPlayer < 150) {
-                        // Run away from player
-                        const runAngle = Math.atan2(this.y - player.y, this.x - player.x);
-                        let diff = runAngle - this.angle;
-                        while (diff > Math.PI) diff -= Math.PI * 2;
-                        while (diff < -Math.PI) diff += Math.PI * 2;
-                        
-                        this.angle += diff * 0.15;
-                    }
-                }
-            }
-            
-            findFood() {
-                let closestFood = null;
-                let closestDist = Infinity;
-                
-                for (const food of foods) {
-                    const dist = Math.hypot(this.x - food.x, this.y - food.y);
-                    if (dist < closestDist && dist < 500) {
-                        closestDist = dist;
-                        closestFood = food;
-                    }
-                }
-                
-                this.targetFood = closestFood;
-            }
-            
-            eatFood() {
-                for (let i = foods.length - 1; i >= 0; i--) {
-                    const food = foods[i];
-                    const dist = Math.hypot(this.x - food.x, this.y - food.y);
-                    
-                    if (dist < 20) {
-                        // Bot eats food
-                        foods.splice(i, 1);
-                        this.grow();
-                        spawnFood();
-                        break;
-                    }
-                }
-            }
-            
-            grow() {
-                const lastSegment = this.segments[this.segments.length - 1];
-                this.segments.push({ x: lastSegment.x, y: lastSegment.y });
-            }
-            
-            die() {
-                this.alive = false;
-            }
-            
-            draw() {
-                if (!this.alive) return;
-                
-                // Draw body
-                ctx.save();
-                ctx.lineWidth = 12;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.strokeStyle = this.color;
-                
-                ctx.beginPath();
-                for (let i = 0; i < this.segments.length; i++) {
-                    const seg = this.segments[i];
-                    if (i === 0) {
-                        ctx.moveTo(seg.x - viewport.x, seg.y - viewport.y);
-                    } else {
-                        ctx.lineTo(seg.x - viewport.x, seg.y - viewport.y);
-                    }
-                }
-                ctx.stroke();
-                
-                // Draw head
-                const head = this.segments[0];
-                ctx.fillStyle = '#ff6666';
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw eyes
-                ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x - 3, head.y - viewport.y - 3, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x + 3, head.y - viewport.y - 3, 2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.restore();
-            }
+        function saveGameData() {
+            localStorage.setItem('cacing_coins', playerData.coins);
+            localStorage.setItem('cacing_skins', JSON.stringify(playerData.skins));
+            localStorage.setItem('cacing_active_skin', playerData.activeSkin);
         }
         
         // =============================================
         // SHOP SYSTEM
         // =============================================
-        function initSkinShop() {
-            const skinGrid = document.getElementById('skinGrid');
+        function initShop() {
+            const skinGrid = document.getElementById('skin-grid');
             skinGrid.innerHTML = '';
             
-            skinOptions.forEach(skin => {
+            skins.forEach(skin => {
                 const isOwned = playerData.skins.includes(skin.id);
                 const isActive = playerData.activeSkin === skin.id;
                 
                 const skinElement = document.createElement('div');
-                skinElement.className = `skin-item ${isActive ? 'active' : ''}`;
+                skinElement.className = `shop-item ${isActive ? 'active' : ''}`;
                 skinElement.innerHTML = `
-                    <div class="skin-preview" style="background: ${skin.color};"></div>
-                    <div class="skin-name">${skin.name}</div>
+                    <div class="item-icon">${skin.emoji}</div>
+                    <div class="item-name">${skin.name}</div>
                     ${isOwned 
-                        ? '<div class="skin-owned">✔ MILIK</div>' 
-                        : `<div class="skin-price">${skin.price} 🪙</div>`
+                        ? '<div style="color: #22c55e; font-size: 0.8rem;">✔ MILIK</div>' 
+                        : `<div class="item-price">${skin.price} 🪙</div>`
                     }
                 `;
                 
@@ -1407,8 +1208,8 @@
                     if (isOwned) {
                         // Activate skin
                         playerData.activeSkin = skin.id;
-                        localStorage.setItem('cacingActiveSkin', skin.id);
-                        initSkinShop();
+                        localStorage.setItem('cacing_active_skin', skin.id);
+                        initShop();
                         showNotification(`✨ Skin ${skin.name} diaktifkan!`, '#a855f7');
                     } else if (playerData.coins >= skin.price) {
                         // Buy skin
@@ -1416,15 +1217,10 @@
                         playerData.skins.push(skin.id);
                         playerData.activeSkin = skin.id;
                         
-                        // Save
-                        localStorage.setItem('cacingCoins', playerData.coins);
-                        localStorage.setItem('cacingSkins', JSON.stringify(playerData.skins));
-                        localStorage.setItem('cacingActiveSkin', skin.id);
-                        
-                        // Update UI
-                        document.getElementById('coinCount').textContent = playerData.coins;
-                        document.getElementById('weaponCoinCount').textContent = playerData.coins;
-                        initSkinShop();
+                        // Save and update
+                        saveGameData();
+                        initShop();
+                        document.getElementById('coin-display').textContent = playerData.coins;
                         showNotification(`🎉 Skin ${skin.name} dibeli!`, '#22c55e');
                         playSound('buy');
                     } else {
@@ -1436,87 +1232,25 @@
             });
         }
         
-        function initWeaponShop() {
-            const weaponGrid = document.getElementById('weaponGrid');
-            weaponGrid.innerHTML = '';
-            
-            weaponOptions.forEach(weapon => {
-                const isOwned = playerData.weapons.includes(weapon.id);
-                const isActive = playerData.activeWeapon === weapon.id;
-                
-                const weaponElement = document.createElement('div');
-                weaponElement.className = `weapon-item ${isActive ? 'active' : ''}`;
-                weaponElement.innerHTML = `
-                    <div class="weapon-icon">${weapon.icon}</div>
-                    <div style="font-weight: bold; margin-bottom: 3px;">${weapon.name}</div>
-                    <div style="font-size: 10px; color: #aaa; margin-bottom: 5px;">${weapon.description}</div>
-                    ${isOwned 
-                        ? '<div style="font-size: 11px; color: #22c55e;">✔ MILIK</div>' 
-                        : `<div style="font-size: 11px; color: #ffd700;">${weapon.price} 🪙</div>`
-                    }
-                `;
-                
-                weaponElement.onclick = () => {
-                    if (isOwned) {
-                        // Activate weapon
-                        playerData.activeWeapon = weapon.id;
-                        localStorage.setItem('cacingActiveWeapon', weapon.id);
-                        initWeaponShop();
-                        showNotification(`⚔️ Senjata ${weapon.name} diaktifkan!`, '#3b82f6');
-                    } else if (playerData.coins >= weapon.price) {
-                        // Buy weapon
-                        playerData.coins -= weapon.price;
-                        playerData.weapons.push(weapon.id);
-                        playerData.activeWeapon = weapon.id;
-                        
-                        // Save
-                        localStorage.setItem('cacingCoins', playerData.coins);
-                        localStorage.setItem('cacingWeapons', JSON.stringify(playerData.weapons));
-                        localStorage.setItem('cacingActiveWeapon', weapon.id);
-                        
-                        // Update UI
-                        document.getElementById('coinCount').textContent = playerData.coins;
-                        document.getElementById('weaponCoinCount').textContent = playerData.coins;
-                        initWeaponShop();
-                        showNotification(`🎉 Senjata ${weapon.name} dibeli!`, '#22c55e');
-                        playSound('buy');
-                    } else {
-                        showNotification('🪙 Koin tidak cukup!', '#ef4444');
-                    }
-                };
-                
-                weaponGrid.appendChild(weaponElement);
-            });
-        }
-        
         function openShop() {
-            document.getElementById('shopModal').classList.remove('hidden');
-            document.getElementById('lobby').classList.add('hidden');
-            document.getElementById('coinCount').textContent = playerData.coins;
+            document.getElementById('coin-display').textContent = playerData.coins;
+            document.getElementById('shop-modal').classList.remove('hidden');
         }
         
         function closeShop() {
-            document.getElementById('shopModal').classList.add('hidden');
-            document.getElementById('lobby').classList.remove('hidden');
-        }
-        
-        function openWeaponShop() {
-            document.getElementById('weaponShopModal').classList.remove('hidden');
-            document.getElementById('lobby').classList.add('hidden');
-            document.getElementById('weaponCoinCount').textContent = playerData.coins;
-        }
-        
-        function closeWeaponShop() {
-            document.getElementById('weaponShopModal').classList.add('hidden');
-            document.getElementById('lobby').classList.remove('hidden');
+            document.getElementById('shop-modal').classList.add('hidden');
         }
         
         // =============================================
         // DAILY REWARD SYSTEM
         // =============================================
         function claimDailyReward() {
-            const now = new Date();
-            const today = now.toDateString();
+            document.getElementById('streak-display').textContent = playerData.dailyRewards.streak || 0;
+            document.getElementById('reward-modal').classList.remove('hidden');
+        }
+        
+        function claimReward() {
+            const today = new Date().toDateString();
             
             if (playerData.dailyRewards.lastClaim === today) {
                 showNotification('🎁 Hadiah hari ini sudah diambil!', '#ef4444');
@@ -1525,23 +1259,23 @@
             
             // Calculate streak
             let streak = playerData.dailyRewards.streak || 0;
-            const lastClaim = playerData.dailyRewards.lastClaim ? new Date(playerData.dailyRewards.lastClaim) : null;
+            const lastClaim = playerData.dailyRewards.lastClaim ? 
+                new Date(playerData.dailyRewards.lastClaim) : null;
             
             if (lastClaim) {
-                const diffDays = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24));
+                const diffDays = Math.floor((new Date() - lastClaim) / (1000 * 60 * 60 * 24));
                 if (diffDays === 1) {
                     streak++;
                 } else if (diffDays > 1) {
-                    streak = 1; // Reset streak if missed a day
+                    streak = 1;
                 }
             } else {
                 streak = 1;
             }
             
-            // Calculate reward (more coins for longer streak)
-            const baseReward = 50;
-            const streakBonus = streak * 10;
-            const totalReward = baseReward + streakBonus;
+            // Calculate reward
+            const baseReward = 100 + (streak - 1) * 50;
+            const totalReward = Math.min(baseReward, 500);
             
             // Give reward
             playerData.coins += totalReward;
@@ -1551,20 +1285,24 @@
             };
             
             // Save
-            localStorage.setItem('cacingCoins', playerData.coins);
-            localStorage.setItem('cacingDailyRewards', JSON.stringify(playerData.dailyRewards));
+            localStorage.setItem('cacing_coins', playerData.coins);
+            localStorage.setItem('cacing_daily_rewards', JSON.stringify(playerData.dailyRewards));
             
             // Show notification
             showNotification(`🎁 Hadiah Harian: +${totalReward} 🪙 | Streak: ${streak} hari`, '#22c55e');
             playSound('reward');
             
             // Update UI
-            document.getElementById('coinCount').textContent = playerData.coins;
-            document.getElementById('weaponCoinCount').textContent = playerData.coins;
+            document.getElementById('coin-display').textContent = playerData.coins;
+            closeReward();
+        }
+        
+        function closeReward() {
+            document.getElementById('reward-modal').classList.add('hidden');
         }
         
         // =============================================
-        // MULTIPLAYER SYSTEM (WiFi)
+        // MULTIPLAYER SYSTEM
         // =============================================
         function initMultiplayer() {
             try {
@@ -1578,80 +1316,62 @@
                 
                 peer.on('open', (id) => {
                     console.log('Multiplayer ready with ID:', id);
-                    document.getElementById('connectionStatus').innerHTML = '✅ <span style="color: #22c55e;">Siap Mabar!</span>';
                 });
                 
-                peer.on('connection', (connection) => {
-                    conn = connection;
-                    setupConnection(conn);
-                });
-                
-                peer.on('error', (err) => {
-                    console.error('PeerJS error:', err);
-                    if (err.type === 'unavailable-id') {
-                        // Generate new ID
-                        playerData.id = Math.floor(1000 + Math.random() * 9000).toString();
-                        localStorage.setItem('cacingPlayerId', playerData.id);
-                        document.getElementById('playerId').textContent = playerData.id;
-                        initMultiplayer(); // Retry
-                    }
+                peer.on('connection', (conn) => {
+                    conn.on('open', () => {
+                        console.log('Player connected:', conn.peer);
+                        connections.push(conn);
+                        setupConnection(conn);
+                        
+                        // Add to player list
+                        if (gameMode === 'host') {
+                            roomPlayers.push({
+                                id: conn.peer,
+                                name: 'Player ' + (roomPlayers.length + 1),
+                                connected: true
+                            });
+                            updatePlayerList();
+                            broadcastRoomUpdate();
+                        }
+                    });
                 });
                 
             } catch (error) {
-                console.error('Failed to initialize multiplayer:', error);
-                document.getElementById('connectionStatus').innerHTML = '❌ <span style="color: #ef4444;">Offline</span>';
+                console.error('Multiplayer initialization failed:', error);
             }
         }
         
-        function setupConnection(connection) {
-            connection.on('open', () => {
-                console.log('Connected to:', connection.peer);
-                isHost = false;
-                gameMode = 'multiplayer';
-                startGame();
-            });
-            
-            connection.on('data', (data) => {
-                handleMultiplayerData(data);
-            });
-            
-            connection.on('close', () => {
-                console.log('Connection closed');
-                showNotification('👋 Pemain keluar dari room', '#ef4444');
-            });
-        }
-        
-        function handleMultiplayerData(data) {
-            // Handle multiplayer data
-            console.log('Received data:', data);
-        }
-        
         function showMultiplayerMenu() {
-            document.getElementById('multiplayerMenu').classList.remove('hidden');
+            document.getElementById('multiplayer-menu').classList.remove('hidden');
         }
         
-        function backToLobby() {
-            document.getElementById('multiplayerMenu').classList.add('hidden');
+        function backToMainMenu() {
+            document.getElementById('multiplayer-menu').classList.add('hidden');
         }
         
         function createRoom() {
             roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-            isHost = true;
-            gameMode = 'multiplayer';
+            gameMode = 'host';
+            
+            roomPlayers = [{
+                id: playerData.id,
+                name: playerData.name,
+                connected: true
+            }];
             
             showNotification(`🏠 Room dibuat! Kode: ${roomCode}`, '#22c55e');
-            document.getElementById('connectionStatus').innerHTML = `👑 <span style="color: #f59e0b;">Host - Kode: ${roomCode}</span>`;
-            
-            // Add self to player list
-            updatePlayerList([{ id: playerData.id, name: playerData.name }]);
+            updatePlayerList();
             
             setTimeout(() => {
                 startGame();
+                document.getElementById('multiplayer-ui').classList.remove('hidden');
+                document.getElementById('room-code-display').textContent = roomCode;
             }, 1000);
         }
         
         function joinRoom() {
-            const code = document.getElementById('roomCode').value;
+            const code = document.getElementById('room-code-input').value;
             if (!code || code.length !== 4) {
                 showNotification('⚠️ Masukkan kode 4 digit!', '#ef4444');
                 return;
@@ -1660,29 +1380,44 @@
             roomCode = code;
             
             try {
-                conn = peer.connect(code);
-                setupConnection(conn);
-                showNotification(`🔗 Menghubungkan ke room ${code}...`, '#3b82f6');
+                const conn = peer.connect(code);
+                conn.on('open', () => {
+                    gameMode = 'client';
+                    showNotification(`🔗 Bergabung ke room ${code}...`, '#3b82f6');
+                    startGame();
+                });
             } catch (error) {
                 showNotification('❌ Gagal bergabung!', '#ef4444');
             }
         }
         
-        function updatePlayerList(players) {
-            const playerList = document.getElementById('playerList');
-            playerList.innerHTML = '';
+        function updatePlayerList() {
+            const container = document.getElementById('player-list-container');
+            const gameList = document.getElementById('player-list-game');
             
-            players.forEach(p => {
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-item';
-                playerItem.innerHTML = `
-                    <div>
-                        <span class="connection-status connected"></span>
-                        ${p.name} ${p.id === playerData.id ? '(Anda)' : ''}
-                    </div>
-                    <div style="font-size: 10px; color: #888;">${p.id}</div>
+            container.innerHTML = '';
+            gameList.innerHTML = '';
+            
+            roomPlayers.forEach(p => {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player-badge';
+                playerElement.innerHTML = `
+                    <span style="color: #22c55e;">●</span>
+                    <span style="margin-left: 8px;">${p.name}</span>
+                    ${p.id === playerData.id ? '<span style="margin-left: auto; color: #ffd700;">(Anda)</span>' : ''}
                 `;
-                playerList.appendChild(playerItem);
+                
+                container.appendChild(playerElement.cloneNode(true));
+                gameList.appendChild(playerElement);
+            });
+        }
+        
+        function broadcastRoomUpdate() {
+            connections.forEach(conn => {
+                conn.send({
+                    type: 'roomUpdate',
+                    players: roomPlayers
+                });
             });
         }
         
@@ -1695,43 +1430,12 @@
                 .catch(() => showNotification('❌ Gagal menyalin ID', '#ef4444'));
         }
         
-        function saveGameData() {
-            // Update high score
-            if (player.score > playerData.highScore) {
-                playerData.highScore = player.score;
-                localStorage.setItem('cacingHighScore', playerData.highScore);
-            }
-            
-            // Save coins
-            localStorage.setItem('cacingCoins', playerData.coins);
-            
-            // Save total kills
-            localStorage.setItem('cacingTotalKills', playerData.totalKills);
-        }
-        
-        function pauseGame() {
-            if (!gameActive) return;
-            
-            gamePaused = !gamePaused;
-            if (gamePaused) {
-                showNotification('⏸️ Game dijeda', '#f59e0b');
-            } else {
-                showNotification('▶️ Game dilanjutkan', '#22c55e');
-            }
-        }
-        
-        function restartGame() {
-            document.getElementById('gameOverModal').classList.add('hidden');
-            document.getElementById('lobby').classList.remove('hidden');
-            document.getElementById('gameUI').classList.add('hidden');
-        }
-        
         function showNotification(message, color) {
             // Remove existing notifications
             const existing = document.querySelectorAll('.notification');
             existing.forEach(n => n.remove());
             
-            // Create new notification
+            // Create notification
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = message;
@@ -1740,22 +1444,13 @@
             document.body.appendChild(notification);
             
             // Remove after animation
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 3000);
+            setTimeout(() => notification.remove(), 3000);
         }
         
         function playSound(type) {
-            // Simple Web Audio sounds
+            // Simple audio feedback
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
                 
@@ -1768,50 +1463,26 @@
                         oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.1);
                         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                         break;
-                    case 'coin':
-                        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-                        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.2);
-                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-                        break;
                     case 'kill':
                         oscillator.type = 'sawtooth';
                         oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
                         oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
-                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                        break;
-                    case 'buy':
-                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
-                        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.2);
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        break;
-                    case 'reward':
-                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-                        oscillator.frequency.linearRampToValueAtTime(800, audioContext.currentTime + 0.2);
-                        oscillator.frequency.linearRampToValueAtTime(400, audioContext.currentTime + 0.4);
                         gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
                         break;
-                    case 'shield':
-                        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-                        oscillator.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 0.3);
+                    case 'buy':
+                    case 'reward':
+                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
                         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        break;
-                    case 'death':
-                        oscillator.type = 'sawtooth';
-                        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-                        oscillator.frequency.linearRampToValueAtTime(50, audioContext.currentTime + 0.5);
-                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
                         break;
                 }
                 
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
                 oscillator.start();
-                setTimeout(() => oscillator.stop(), 300);
+                setTimeout(() => oscillator.stop(), 200);
                 
             } catch (error) {
                 // Audio not supported
-                console.log('Audio not supported');
             }
         }
         
@@ -1820,8 +1491,8 @@
         // =============================================
         let joyActive = false;
         
-        // Touch controls
-        document.getElementById('joy-base').addEventListener('touchstart', (e) => {
+        // Joystick controls
+        document.getElementById('joystick-base').addEventListener('touchstart', (e) => {
             e.preventDefault();
             joyActive = true;
             updateJoystick(e.touches[0]);
@@ -1835,11 +1506,11 @@
         
         document.addEventListener('touchend', () => {
             joyActive = false;
-            document.getElementById('joy-stick').style.transform = 'translate(0, 0)';
+            document.getElementById('joystick-handle').style.transform = 'translate(0, 0)';
         });
         
         // Mouse controls
-        document.getElementById('joy-base').addEventListener('mousedown', (e) => {
+        document.getElementById('joystick-base').addEventListener('mousedown', (e) => {
             e.preventDefault();
             joyActive = true;
             updateJoystick(e);
@@ -1853,7 +1524,7 @@
         
         document.addEventListener('mouseup', () => {
             joyActive = false;
-            document.getElementById('joy-stick').style.transform = 'translate(0, 0)';
+            document.getElementById('joystick-handle').style.transform = 'translate(0, 0)';
         });
         
         // Keyboard controls
@@ -1877,20 +1548,14 @@
                 case 'd':
                     player.angle = 0;
                     break;
-                case ' ': // Space bar for special ability
-                    if (player.weapon.id === 'laser') {
-                        showNotification('🔫 Laser aktif!', '#00ffff');
-                        playSound('kill');
-                    }
-                    break;
             }
         });
         
         function updateJoystick(input) {
             if (!player || !player.alive) return;
             
-            const joyBase = document.getElementById('joy-base');
-            const rect = joyBase.getBoundingClientRect();
+            const base = document.getElementById('joystick-base');
+            const rect = base.getBoundingClientRect();
             
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -1907,35 +1572,27 @@
                 dy = (dy / distance) * maxDist;
             }
             
-            // Update joystick visual
-            document.getElementById('joy-stick').style.transform = `translate(${dx}px, ${dy}px)`;
+            // Update joystick handle
+            document.getElementById('joystick-handle').style.transform = `translate(${dx}px, ${dy}px)`;
             
-            // Update player direction
-            player.angle = Math.atan2(dy, dx);
+            // Update player direction (smooth)
+            const targetAngle = Math.atan2(dy, dx);
+            let diff = targetAngle - player.angle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            
+            player.angle += diff * 0.2;
         }
         
         // =============================================
-        // PWA SUPPORT
-        // =============================================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('pwa.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('ServiceWorker registration failed:', error);
-                    });
-            });
-        }
-        
-        // =============================================
-        // INITIALIZE GAME
+        // START GAME
         // =============================================
         window.addEventListener('DOMContentLoaded', init);
         
-        // Prevent context menu on mobile
+        // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        console.log('Cacing Arena Ultimate ready!');
     </script>
 </body>
 </html>
