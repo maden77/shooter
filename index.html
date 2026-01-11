@@ -239,6 +239,14 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     // 2. Sembunyikan menu/lobby
     document.getElementById('lobby').classList.add('hidden');
+      gameActive = true;
+    
+    // Reset Ular
+    p1 = new Snake(0, 0, db.active);
+    
+    // Mulai animasi
+    requestAnimationFrame(gameLoop);
+}
 
     // 3. Inisialisasi dunia game
     for(let i=0; i<30; i++) spawnFood(true);
