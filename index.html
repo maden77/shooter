@@ -6,7 +6,7 @@
       <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon2048-192x192.png" sizes="192x192">
     <title>Snake Master: Ultimate Infinite</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
     <style>
         :root { --neon: #00f2ff; --gold: #ffd700; --bg: #05050a; --danger: #ff0055; }
         body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
@@ -390,6 +390,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
         updateUI();
          <script src="pwa.js"></script>
+   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js">
     </script>
 </body>
 </html>
