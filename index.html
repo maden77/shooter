@@ -14,12 +14,14 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(10, 10, 30, 0.95); padding: 25px; border-radius: 20px; 
             border: 2px solid #a855f7; text-align: center; width: 300px; z-index: 100;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
         }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; outline: none; box-sizing: border-box; background: #1a1a3a; color: white; border: 1px solid #333; }
-        button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; }
-        #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; }
+        button { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; color: white; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        #scoreBox { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #ffd700; z-index: 50; text-shadow: 2px 2px #000; }
         .hidden { display: none !important; }
-        .id-badge { border: 2px dashed #ffd700; padding: 10px; border-radius: 10px; margin: 10px 0; }
+        .id-badge { border: 2px dashed #ffd700; padding: 10px; border-radius: 10px; margin: 10px 0; cursor: pointer; }
         #my-id { margin: 5px 0; letter-spacing: 5px; color: #ffd700; font-size: 1.5em; }
     </style>
 </head>
@@ -30,9 +32,9 @@
     <div id="setup">
         <h2 style="color: #a855f7; margin: 0;">Cacing Berkuasa</h2>
         <input type="text" id="nameInput" placeholder="Nama Kamu" maxlength="10">
-        <div class="id-badge">
-            <p style="font-size: 0.7em; margin: 0; color: #aaa;">ID MABAR KAMU</p>
-            <h2 id="my-id">MENGHUBUNGKAN...</h2>
+        <div class="id-badge" onclick="copyID()" title="Klik untuk salin ID">
+            <p style="font-size: 0.7em; margin: 0; color: #aaa;">ID MABAR PERMANEN (KLIK SALIN)</p>
+            <h2 id="my-id">...</h2>
         </div>
         <input type="number" id="joinId" placeholder="ID Teman (4 Digit)">
         <button onclick="gabungMabar()" style="background: #22c55e;">GABUNG MABAR</button>
@@ -40,7 +42,8 @@
     </div>
 
     <div id="gameover" class="hidden">
-        <h2 style="color: #ef4444;">GAME OVER</h2>
+        <h2 style="color: #ef4444;">MATI DEH!</h2>
+        <p id="finalScore"></p>
         <button onclick="location.reload()" style="background: #3b82f6;">MAIN LAGI</button>
     </div>
 
@@ -51,26 +54,46 @@
         const ctx = canvas.getContext('2d');
         let play = false, conn, opponents = {}, targetAngle = 0;
 
-        // --- MULTIPLAYER SETUP ---
-        let myShortId = Math.floor(1000 + Math.random() * 9000).toString();
-        let peer = new Peer(myShortId, {
-            host: '0.peerjs.com', // Memaksa ke server utama
-            port: 443,
-            secure: true
-        });
+        // --- SISTEM SUARA ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'makan') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'mati') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            }
+        }
 
+        // --- ID & NAMA PERMANEN ---
+        let myShortId = localStorage.getItem('cacingPlayerId');
+        if (!myShortId) {
+            myShortId = Math.floor(1000 + Math.random() * 9000).toString();
+            localStorage.setItem('cacingPlayerId', myShortId);
+        }
+
+        // --- MULTIPLAYER SETUP ---
+        let peer = new Peer(myShortId, { host: '0.peerjs.com', port: 443, secure: true });
         peer.on('open', id => { document.getElementById('my-id').innerText = id; });
         peer.on('error', err => { 
-            console.error(err);
-            document.getElementById('my-id').innerText = "RETRYING...";
-            // Coba lagi jika gagal
-            setTimeout(() => location.reload(), 3000);
+            if(err.type === 'unavailable-id') {
+                localStorage.removeItem('cacingPlayerId');
+                location.reload();
+            }
+            document.getElementById('my-id').innerText = "OFFLINE";
         });
-        
         peer.on('connection', c => {
             conn = c;
             setupConnection();
-            alert("Teman bergabung!");
             if(!play) startGame();
         });
 
@@ -78,7 +101,7 @@
             const tid = document.getElementById('joinId').value;
             if(tid) {
                 conn = peer.connect(tid);
-                conn.on('open', () => { setupConnection(); alert("Terhubung!"); startGame(); });
+                conn.on('open', () => { setupConnection(); startGame(); });
             }
         }
 
@@ -86,29 +109,44 @@
             conn.on('data', data => { if(data.type === 'move') opponents[data.id] = data; });
         }
 
-        // --- GAME LOGIC ---
+        function copyID() {
+            navigator.clipboard.writeText(myShortId);
+            alert("ID disalin ke clipboard!");
+        }
+
+        // --- DATA GAME ---
         let me = { x: 0, y: 0, a: 0, p: [], c: '#a855f7', n: '', score: 0, speed: 2 };
         let foods = [], bots = [];
-        
+        const fruitUrls = [
+            'https://cdn-icons-png.flaticon.com/512/415/415733.png',
+            'https://cdn-icons-png.flaticon.com/512/1792/1792812.png',
+            'https://cdn-icons-png.flaticon.com/512/2909/2909787.png'
+        ];
+        const fruitImages = fruitUrls.map(url => { const img = new Image(); img.src = url; return img; });
+
         function startGame() {
             me.n = document.getElementById('nameInput').value || "Cacing";
+            localStorage.setItem('cacingPlayerName', me.n);
             document.getElementById('setup').classList.add('hidden');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             me.x = canvas.width/2; me.y = canvas.height/2;
+            me.p = [];
             for(let i=0; i<15; i++) me.p.push({x: me.x, y: me.y});
             for(let i=0; i<25; i++) spawnFood();
             for(let i=0; i<3; i++) spawnBot();
             play = true; loop();
         }
 
-        function spawnFood() { foods.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height }); }
+        function spawnFood() { 
+            foods.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, imgIdx: Math.floor(Math.random()*3) }); 
+        }
+        
         function spawnBot() {
             let bx = Math.random()*canvas.width, by = Math.random()*canvas.height;
             let bp = []; for(let i=0; i<15; i++) bp.push({x: bx, y: by});
             bots.push({ x: bx, y: by, a: Math.random()*7, p: bp, c: '#ef4444', n: 'Bot' });
         }
 
-        // Kontrol Android (Touch)
         window.addEventListener('touchmove', e => {
             e.preventDefault();
             targetAngle = Math.atan2(e.touches[0].clientY - me.y, e.touches[0].clientX - me.x);
@@ -118,7 +156,6 @@
             if(!play) return;
             ctx.fillStyle = '#050515'; ctx.fillRect(0,0,canvas.width, canvas.height);
 
-            // Pergerakan
             let diff = targetAngle - me.a;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -129,45 +166,69 @@
 
             if(conn && conn.open) conn.send({ type: 'move', id: myShortId, x: me.x, y: me.y, p: me.p, n: me.n });
 
-            // Gambar Makanan
-       if(fruitImages[f.imgIdx] && fruitImages[f.imgIdx].complete) {
-        ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
-    } else {
-        // Jika gambar belum siap, tetap pakai kuning (cadangan)
-        ctx.fillStyle = "#ffd700";
-        ctx.beginPath(); ctx.arc(f.x, f.y, 7, 0, Math.PI*2); ctx.fill();
-    }
-            
-                if(Math.hypot(me.x - f.x, me.y - f.y) < 20) { foods.splice(i,1); spawnFood(); me.score += 10; document.getElementById('scoreVal').innerText = me.score; me.p.push({...me.p[me.p.length-1]}); }
+            // 1. Gambar Makanan (Buah)
+            foods.forEach((f, i) => {
+                if(fruitImages[f.imgIdx].complete) {
+                    ctx.drawImage(fruitImages[f.imgIdx], f.x-15, f.y-15, 30, 30);
+                } else {
+                    ctx.fillStyle = "#ffd700";
+                    ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, Math.PI*2); ctx.fill();
+                }
+                if(Math.hypot(me.x - f.x, me.y - f.y) < 25) { 
+                    foods.splice(i,1); spawnFood(); playSound('makan');
+                    me.score += 10; document.getElementById('scoreVal').innerText = me.score; 
+                    me.p.push({...me.p[me.p.length-1]});
+                    if(navigator.vibrate) navigator.vibrate(15);
+                }
             });
 
-            // Bot (Bisa dimakan)
+            // 2. Gambar Bot (Bisa dimakan)
             bots.forEach((b, i) => {
                 b.a += (Math.random()-0.5)*0.2;
                 b.x = (b.x + Math.cos(b.a)*1.5 + canvas.width)%canvas.width;
                 b.y = (b.y + Math.sin(b.a)*1.5 + canvas.height)%canvas.height;
                 b.p.unshift({x:b.x, y:b.y}); b.p.pop();
                 drawSnake(b.p, b.c, b.n);
-                if(Math.hypot(me.x-b.x, me.y-b.y) < 25) { bots.splice(i,1); spawnBot(); me.score += 50; document.getElementById('scoreVal').innerText = me.score; }
+                if(Math.hypot(me.x-b.x, me.y-b.y) < 25) { 
+                    for(let k=0; k<5; k++) foods.push({x: b.x+(Math.random()-0.5)*60, y: b.y+(Math.random()-0.5)*60, imgIdx: Math.floor(Math.random()*3)});
+                    bots.splice(i,1); spawnBot(); playSound('makan');
+                    me.score += 50; document.getElementById('scoreVal').innerText = me.score;
+                    if(navigator.vibrate) navigator.vibrate(30);
+                }
             });
 
-            // Lawan Mabar (Bikin Mati)
+            // 3. Gambar Lawan Mabar (Tabrakan = Mati)
             Object.values(opponents).forEach(opp => {
                 drawSnake(opp.p, '#22c55e', opp.n);
                 opp.p.forEach(pt => { if(Math.hypot(me.x - pt.x, me.y - pt.y) < 15) gameOver(); });
             });
 
+            // 4. Gambar Cacing Saya
             drawSnake(me.p, me.c, me.n);
             requestAnimationFrame(loop);
         }
 
         function drawSnake(p, c, n) {
-            ctx.strokeStyle = c; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.beginPath();
-            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)); ctx.stroke();
-            ctx.fillStyle = "white"; ctx.fillText(n, p[0].x, p[0].y - 20);
+            ctx.strokeStyle = c; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath();
+            p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+            ctx.stroke();
+            ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
+            ctx.fillText(n, p[0].x - 15, p[0].y - 25);
         }
 
-        function gameOver() { play = false; document.getElementById('gameover').classList.remove('hidden'); }
+        function gameOver() { 
+            if(!play) return;
+            play = false; playSound('mati');
+            if(navigator.vibrate) navigator.vibrate(400);
+            document.getElementById('gameover').classList.remove('hidden'); 
+            document.getElementById('finalScore').innerText = "Skor Akhir: " + me.score;
+        }
+
+        window.onload = () => {
+            const savedName = localStorage.getItem('cacingPlayerName');
+            if (savedName) document.getElementById('nameInput').value = savedName;
+        };
     </script>
 </body>
 </html>
