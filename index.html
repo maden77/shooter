@@ -389,48 +389,63 @@
                         return 'both_die';
                     }
                 }
-                
-                // Check collision with other snake's body
-                for (let i = 3; i < otherSnake.segments.length; i++) { // Skip first 3 segments near head
-                    const segment = otherSnake.segments[i];
-                    const dist = Math.sqrt(
-                        Math.pow(head.x - segment.x, 2) + 
-                        Math.pow(head.y - segment.y, 2)
-                    );
-                    
-                    if (dist < this.radius + 5) {
-                        if (this.isBot && !otherSnake.isBot) {
-                            // Player hits bot body - bot dies
-                            return 'bot_dies';
-                        } else if (!this.isBot && otherSnake.isBot) {
-                            // Bot body hits player head - player dies
-                            return 'player_dies';
-                        }
-                    }
-                }
-                
-                return false;
+
+
+           checkCollisionWith(otherSnake) {
+    if (!otherSnake || !otherSnake.alive || this === otherSnake) return false;
+    
+    const head = this.segments[0];
+    
+    // Check collision with other snake's head
+    const otherHead = otherSnake.segments[0];
+    const headDist = Math.sqrt(
+        Math.pow(head.x - otherHead.x, 2) + 
+        Math.pow(head.y - otherHead.y, 2)
+    );
+    
+    // Jika kepala bertabrakan:
+    if (headDist < this.radius + otherSnake.radius) {
+        // PLAYER vs BOT: Bot selalu mati, Player selamat
+        if (!this.isBot && otherSnake.isBot) {
+            // Player nabrak kepala bot → Bot mati
+            return 'bot_dies';
+        } else if (this.isBot && !otherSnake.isBot) {
+            // Bot nabrak kepala player → Bot mati juga (Player selamat)
+            return 'bot_dies';
+        }
+        // Bot vs Bot: keduanya mati
+        return 'both_die';
+    }
+    
+    // Check collision with other snake's body
+    for (let i = 3; i < otherSnake.segments.length; i++) {
+        const segment = otherSnake.segments[i];
+        const dist = Math.sqrt(
+            Math.pow(head.x - segment.x, 2) + 
+            Math.pow(head.y - segment.y, 2)
+        );
+        
+        if (dist < this.radius + 5) {
+            // PLAYER vs BOT BODY: Bot mati
+            if (!this.isBot && otherSnake.isBot) {
+                // Player nabrak tubuh bot → Bot mati
+                return 'bot_dies';
+            } else if (this.isBot && !otherSnake.isBot) {
+                // Bot nabrak tubuh player → Bot mati juga
+                return 'bot_dies';
             }
+            // Bot vs Bot body: keduanya mati
+            return 'both_die';
+        }
+    }
+    
+    return false;
+}
+                
+          
+                
+              
             
-            checkSelfCollision() {
-                if (this.isBot) return false; // Bots don't die from self-collision
-                
-                const head = this.segments[0];
-                
-                // Check collision with own body (skip first 4 segments near head)
-                for (let i = 4; i < this.segments.length; i++) {
-                    const segment = this.segments[i];
-                    const dx = head.x - segment.x;
-                    const dy = head.y - segment.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < this.radius) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            }
             
             die(killer = null) {
                 if (!this.alive) return;
