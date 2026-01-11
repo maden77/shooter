@@ -249,10 +249,10 @@ function playSound(type) {
     document.getElementById('lobby').classList.add('hidden');
 
     // 3. Inisialisasi dunia game
-    for(let i=0; i<100; i++) spawnFood(true);
+    for(let i=0; i<30; i++) spawnFood(true);
     
     // 4. Spawn bot (100 bot mungkin agak berat, pastikan performa aman)
-    for(let i=0; i<1000; i++) {
+    for(let i=0; i<100; i++) {
         bots.push(new Snake(
             (Math.random()-0.5)*2000, 
             (Math.random()-0.5)*2000, 
