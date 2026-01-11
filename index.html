@@ -362,6 +362,20 @@
             to { transform: translateX(100%); opacity: 0; }
         }
         
+        /* BOT INFO PANEL */
+        .bot-info {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid #3b82f6;
+            font-size: 0.9rem;
+            max-width: 200px;
+            backdrop-filter: blur(5px);
+        }
+        
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .menu-card {
@@ -431,7 +445,7 @@
     <div id="main-menu" class="hidden">
         <div class="menu-card">
             <h1 class="game-title">🐍 CACING ARENA</h1>
-            <p class="game-subtitle">Ultimate Edition - Infinite World</p>
+            <p class="game-subtitle">Ultimate Edition - Enhanced Bots</p>
             
             <div class="player-info">
                 <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">NAMA PLAYER</p>
@@ -462,6 +476,10 @@
                 
                 <button class="btn btn-warning" onclick="claimDailyReward()">
                     🎁 REWARD HARIAN
+                </button>
+                
+                <button class="btn" onclick="toggleBotInfo()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    🤖 BOT INFO
                 </button>
             </div>
             
@@ -563,6 +581,11 @@
             </div>
         </div>
         
+        <div id="bot-info-panel" class="bot-info hidden">
+            <p style="color: #3b82f6; font-weight: bold; margin-bottom: 5px;">🤖 BOT AI ACTIVE</p>
+            <p id="bot-count-display" style="color: #94a3b8; font-size: 0.8rem;">0/0 alive</p>
+        </div>
+        
         <div class="multiplayer-info hidden" id="multiplayer-ui">
             <p style="color: #22c55e; font-weight: bold; margin-bottom: 5px;">👥 ROOM: <span id="room-code-display">0000</span></p>
             <div id="player-list-game" class="player-list"></div>
@@ -598,297 +621,7 @@
         let gameMode = 'solo'; // 'solo', 'host', 'client'
         let player = null;
         let foods = [];
-        let bots = []; 
-   // =============================================
-// KODE YANG DITAMBAHKAN DI CLASS BOT
-// =============================================
-
-class Bot {
-    constructor(x, y, skin, name, id = null) {
-        this.x = x;
-        this.y = y;
-        this.skin = skin || 'default';  // Bot juga punya skin
-        this.name = name;
-        this.id = id || Math.random().toString(36).substr(2, 9);
-        this.isBot = true;
-        this.angle = Math.random() * Math.PI * 2;
-        this.speed = 1.5 + Math.random() * 0.5; // Random speed
-        this.radius = 10; // Sama dengan player
-        this.alive = true;
-        this.score = 0;
-        this.segments = [];
-        this.color = this.getSkinColor(this.skin);
-        
-        // Pilih nama bot yang keren
-        const botNames = [
-            'Bot Warrior', 'Snake AI', 'Metal Gear', 'Python Bot',
-            'Venom Snake', 'Cyber Snake', 'Ghost Bot', 'Stealth Bot'
-        ];
-        this.name = botNames[Math.floor(Math.random() * botNames.length)];
-        
-        // Buat tubuh cacing dengan panjang random
-        const length = 8 + Math.floor(Math.random() * 7); // 8-15 segments
-        for (let i = 0; i < length; i++) {
-            this.segments.push({
-                x: this.x - i * 3,
-                y: this.y
-            });
-        }
-        
-        // Bot properties
-        this.targetFood = null;
-        this.turnTimer = 0;
-        this.behavior = Math.random(); // Random behavior type
-        this.aggressiveness = Math.random(); // 0-1
-    }
-    
-    getSkinColor(skinId) {
-        // Warna khusus untuk bot yang berbeda
-        const botSkins = [
-            '#ef4444', // Red
-            '#dc2626', // Dark Red
-            '#b91c1c', // Crimson
-            '#991b1b', // Maroon
-            '#7f1d1d', // Dark Maroon
-            '#ea580c', // Orange
-            '#c2410c', // Dark Orange
-            '#9a3412', // Rust
-            '#7c2d12', // Brown
-            '#431407'  // Dark Brown
-        ];
-        return botSkins[Math.floor(Math.random() * botSkins.length)];
-    }
-    
-    update() {
-        if (!this.alive) return;
-        
-        // Update bot AI berdasarkan behavior
-        this.updateBotAI();
-        
-        // Gerak
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
-        
-        // Update segments
-        this.segments.unshift({ x: this.x, y: this.y });
-        if (this.segments.length > 25) { // Max length untuk bot
-            this.segments.pop();
-        }
-        
-        // Coba makan makanan
-        this.eatFood();
-    }
-    
-    updateBotAI() {
-        this.turnTimer--;
-        
-        // Bot dengan behavior berbeda
-        if (this.behavior < 0.3) {
-            // Behavior 1: Passive - cari makanan saja
-            this.findFood();
-        } else if (this.behavior < 0.6) {
-            // Behavior 2: Aggressive - cari player
-            this.huntPlayer();
-        } else if (this.behavior < 0.8) {
-            // Behavior 3: Defensive - hindari player
-            this.avoidPlayer();
-        } else {
-            // Behavior 4: Random movement
-            this.randomMovement();
-        }
-        
-        // Update movement based on target
-        if (this.targetFood) {
-            const targetAngle = Math.atan2(
-                this.targetFood.y - this.y,
-                this.targetFood.x - this.x
-            );
-            
-            let diff = targetAngle - this.angle;
-            while (diff > Math.PI) diff -= Math.PI * 2;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            
-            this.angle += diff * 0.1;
-        }
-    }
-    
-    findFood() {
-        if (this.turnTimer <= 0 || !this.targetFood) {
-            let closestFood = null;
-            let closestDist = Infinity;
-            
-            for (const food of foods) {
-                const dist = Math.hypot(this.x - food.x, this.y - food.y);
-                if (dist < closestDist && dist < 600) {
-                    closestDist = dist;
-                    closestFood = food;
-                }
-            }
-            
-            this.targetFood = closestFood;
-            this.turnTimer = 30 + Math.random() * 30;
-        }
-    }
-    
-    huntPlayer() {
-        if (player && player.alive) {
-            const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
-            
-            if (distToPlayer < 400 && Math.random() < this.aggressiveness) {
-                // Hunt player
-                const targetAngle = Math.atan2(
-                    player.y - this.y,
-                    player.x - this.x
-                );
-                
-                let diff = targetAngle - this.angle;
-                while (diff > Math.PI) diff -= Math.PI * 2;
-                while (diff < -Math.PI) diff += Math.PI * 2;
-                
-                this.angle += diff * 0.15;
-            } else {
-                this.findFood();
-            }
-        } else {
-            this.findFood();
-        }
-    }
-    
-    avoidPlayer() {
-        if (player && player.alive) {
-            const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
-            
-            if (distToPlayer < 300) {
-                // Run away from player
-                const runAngle = Math.atan2(
-                    this.y - player.y,
-                    this.x - player.x
-                );
-                
-                let diff = runAngle - this.angle;
-                while (diff > Math.PI) diff -= Math.PI * 2;
-                while (diff < -Math.PI) diff += Math.PI * 2;
-                
-                this.angle += diff * 0.2;
-            } else {
-                this.findFood();
-            }
-        } else {
-            this.findFood();
-        }
-    }
-    
-    randomMovement() {
-        this.angle += (Math.random() - 0.5) * 0.3;
-        
-        if (Math.random() < 0.05) {
-            this.targetFood = null;
-        }
-    }
-    
-    eatFood() {
-        for (let i = foods.length - 1; i >= 0; i--) {
-            const food = foods[i];
-            const dist = Math.hypot(this.x - food.x, this.y - food.y);
-            
-            if (dist < 20) {
-                // Bot makan makanan
-                foods.splice(i, 1);
-                this.grow();
-                
-                // Tambah score bot (tidak terlihat oleh player)
-                this.score += food.value;
-                
-                // Spawn makanan baru
-                spawnFood();
-                break;
-            }
-        }
-    }
-    
-    grow() {
-        // Bot tumbuh lebih lambat dari player
-        if (Math.random() < 0.5) {
-            const tail = this.segments[this.segments.length - 1];
-            this.segments.push({ x: tail.x, y: tail.y });
-        }
-    }
-    
-    // =============================================
-    // FUNGSI DRAW BOT YANG SAMA DENGAN PLAYER
-    // =============================================
-    draw() {
-        if (!this.alive) return;
-        
-        // Draw body dengan efek yang SAMA seperti player
-        ctx.save();
-        
-        // Efek glow untuk bot
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
-        
-        // Body dengan gradient (sama seperti player)
-        ctx.lineWidth = 14;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        // Gradient untuk bot
-        const gradient = ctx.createLinearGradient(
-            this.segments[0].x - viewport.x,
-            this.segments[0].y - viewport.y,
-            this.segments[this.segments.length - 1].x - viewport.x,
-            this.segments[this.segments.length - 1].y - viewport.y
-        );
-        
-        gradient.addColorStop(0, this.color);
-        gradient.addColorStop(1, this.color + 'aa');
-        ctx.strokeStyle = gradient;
-        
-        // Draw body
-        ctx.beginPath();
-        for (let i = 0; i < this.segments.length; i++) {
-            const seg = this.segments[i];
-            if (i === 0) {
-                ctx.moveTo(seg.x - viewport.x, seg.y - viewport.y);
-            } else {
-                ctx.lineTo(seg.x - viewport.x, seg.y - viewport.y);
-            }
-        }
-        ctx.stroke();
-        
-        // Draw head dengan mata (sama seperti player)
-        const head = this.segments[0];
-        ctx.fillStyle = '#ff6666'; // Warna kepala bot sedikit berbeda
-        ctx.beginPath();
-        ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw eyes (sama seperti player tapi warna berbeda)
-        ctx.fillStyle = '#8b0000'; // Mata bot lebih gelap
-        const eyeOffset = 4;
-        ctx.beginPath();
-        ctx.arc(head.x - viewport.x - eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(head.x - viewport.x + eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw name dengan style berbeda
-        ctx.fillStyle = '#ff6666';
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.shadowBlur = 3;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 25);
-        
-        // Draw bot indicator
-        ctx.fillStyle = '#ef4444';
-        ctx.font = '10px Arial';
-        ctx.fillText('🤖', head.x - viewport.x, head.y - viewport.y - 40);
-        
-        ctx.restore();
-    }
-}
+        let bots = [];
         let viewport = { x: 0, y: 0 };
         let stats = {
             coins: 0,
@@ -896,6 +629,7 @@ class Bot {
             kills: 0,
             score: 0
         };
+        let showBotInfo = false;
         
         // Player data
         let playerData = {
@@ -907,7 +641,8 @@ class Bot {
             dailyRewards: JSON.parse(localStorage.getItem('cacing_daily_rewards')) || {
                 lastClaim: null,
                 streak: 0
-            }
+            },
+            highScore: parseInt(localStorage.getItem('cacing_high_score')) || 0
         };
         
         // Multiplayer
@@ -927,40 +662,24 @@ class Bot {
             { id: 'neon', name: 'Neon', color: '#00ff88', price: 800, emoji: '💫' }
         ];
         
-        // =============================================
-        // INITIALIZE GAME
-        // =============================================
-        function init() {
-            console.log('Initializing Cacing Arena...');
-            
-            // Initialize player ID
-            if (!playerData.id) {
-                playerData.id = Math.floor(1000 + Math.random() * 9000).toString();
-                localStorage.setItem('cacing_player_id', playerData.id);
-            }
-            
-            // Update UI
-            document.getElementById('player-id-display').textContent = playerData.id;
-            document.getElementById('player-name').value = playerData.name;
-            document.getElementById('coin-display').textContent = playerData.coins;
-            
-            // Initialize multiplayer
-            initMultiplayer();
-            
-            // Initialize shop
-            initShop();
-            
-            // Hide loading screen
-            setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('main-menu').classList.remove('hidden');
-            }, 1000);
-            
-            console.log('Game initialized successfully!');
-        }
+        // Bot skin options (darker colors)
+        const botSkins = [
+            { id: 'bot_red', color: '#dc2626', name: 'Red Bot' },
+            { id: 'bot_purple', color: '#7c3aed', name: 'Purple Bot' },
+            { id: 'bot_green', color: '#16a34a', name: 'Green Bot' },
+            { id: 'bot_orange', color: '#ea580c', name: 'Orange Bot' },
+            { id: 'bot_pink', color: '#db2777', name: 'Pink Bot' },
+            { id: 'bot_cyan', color: '#0891b2', name: 'Cyan Bot' }
+        ];
+        
+        // Bot names
+        const botNames = [
+            'Cacing Bot', 'Ular AI', 'Python Bot', 'Naga Bot', 'Slither AI',
+            'Viper Bot', 'Cobra AI', 'Serpent Bot', 'Anaconda AI', 'Boa Bot'
+        ];
         
         // =============================================
-        // GAME CLASSES
+        // GAME CLASSES - ENHANCED
         // =============================================
         class Snake {
             constructor(x, y, skin, name, isBot = false, id = null) {
@@ -971,30 +690,52 @@ class Bot {
                 this.isBot = isBot;
                 this.id = id || Math.random().toString(36).substr(2, 9);
                 this.angle = Math.random() * Math.PI * 2;
-                this.speed = isBot ? 1.5 : 3.5;
-                this.radius = isBot ? 8 : 12;
+                this.speed = isBot ? 2.0 : 3.5;
+                this.radius = isBot ? 10 : 12;
                 this.alive = true;
                 this.score = 0;
                 this.segments = [];
                 this.color = this.getSkinColor(skin);
                 
-                // Create body
-                const length = isBot ? 10 : 15;
+                // Create body with more segments for cacing shape
+                const length = isBot ? 20 : 15;
                 for (let i = 0; i < length; i++) {
                     this.segments.push({
-                        x: this.x - i * 3,
-                        y: this.y
+                        x: this.x - i * 2.5,
+                        y: this.y,
+                        width: isBot ? 14 : 16
                     });
                 }
                 
-                // Bot properties
+                // BOT SPECIFIC PROPERTIES - ENHANCED
                 if (isBot) {
-                    this.targetFood = null;
-                    this.turnTimer = 0;
+                    this.aiState = 'roam'; // 'roam', 'hunt_food', 'hunt_player', 'flee', 'attack'
+                    this.target = null;
+                    this.aggression = Math.random() * 0.5 + 0.3; // 0.3 - 0.8
+                    this.intelligence = Math.random() * 0.6 + 0.4; // 0.4 - 1.0
+                    this.personality = Math.random() > 0.5 ? 'aggressive' : 'cautious';
+                    this.stateTimer = 0;
+                    this.lastDecision = Date.now();
+                    this.memory = []; // Menyimpan posisi makanan/player terakhir
+                    this.avoidPoints = []; // Titik yang harus dihindari
+                    this.health = 100;
+                    this.level = 1;
+                    this.experience = 0;
+                    
+                    // Set speed based on personality
+                    if (this.personality === 'aggressive') {
+                        this.speed *= 1.2;
+                    } else {
+                        this.speed *= 0.9;
+                    }
                 }
             }
             
             getSkinColor(skinId) {
+                if (this.isBot) {
+                    const botSkin = botSkins.find(s => s.id === skinId) || botSkins[0];
+                    return botSkin.color;
+                }
                 const skin = skins.find(s => s.id === skinId) || skins[0];
                 return skin.color;
             }
@@ -1002,86 +743,249 @@ class Bot {
             update() {
                 if (!this.alive) return;
                 
-                // Bot AI
+                // BOT AI - Enhanced dengan state machine
                 if (this.isBot) {
-                    this.updateBot();
+                    this.updateEnhancedBot();
                 }
                 
                 // Move (infinite world)
                 this.x += Math.cos(this.angle) * this.speed;
                 this.y += Math.sin(this.angle) * this.speed;
                 
-                // Update segments
-                this.segments.unshift({ x: this.x, y: this.y });
+                // Update segments dengan efek wave untuk cacing
+                this.segments.unshift({ 
+                    x: this.x, 
+                    y: this.y,
+                    width: this.isBot ? 14 : 16
+                });
+                
+                // Apply wave effect to body
+                for (let i = 0; i < this.segments.length; i++) {
+                    const segment = this.segments[i];
+                    if (i > 0 && i < this.segments.length - 1) {
+                        const wave = Math.sin(Date.now() * 0.001 + i * 0.2) * 3;
+                        segment.x += Math.cos(this.angle + Math.PI/2) * wave;
+                        segment.y += Math.sin(this.angle + Math.PI/2) * wave;
+                    }
+                }
+                
                 if (this.segments.length > 100) {
                     this.segments.pop();
                 }
             }
             
-            updateBot() {
-                this.turnTimer--;
+            updateEnhancedBot() {
+                this.stateTimer--;
                 
-                // Find food
-                if (this.turnTimer <= 0 || !this.targetFood) {
-                    let closestFood = null;
-                    let closestDist = Infinity;
-                    
-                    for (const food of foods) {
-                        const dist = Math.hypot(this.x - food.x, this.y - food.y);
-                        if (dist < closestDist && dist < 800) {
-                            closestDist = dist;
-                            closestFood = food;
-                        }
-                    }
-                    
-                    this.targetFood = closestFood;
-                    this.turnTimer = 40 + Math.random() * 40;
+                // Make decision every 60 frames or when timer runs out
+                if (this.stateTimer <= 0 || Date.now() - this.lastDecision > 2000) {
+                    this.makeDecision();
+                    this.lastDecision = Date.now();
+                    this.stateTimer = 60 + Math.random() * 60;
                 }
                 
-                // Move towards food or random
-                if (this.targetFood) {
-                    const targetAngle = Math.atan2(
-                        this.targetFood.y - this.y,
-                        this.targetFood.x - this.x
-                    );
-                    
-                    let diff = targetAngle - this.angle;
-                    while (diff > Math.PI) diff -= Math.PI * 2;
-                    while (diff < -Math.PI) diff += Math.PI * 2;
-                    
-                    this.angle += diff * 0.08;
+                // Execute current state
+                switch(this.aiState) {
+                    case 'roam':
+                        this.roamBehavior();
+                        break;
+                    case 'hunt_food':
+                        this.huntFoodBehavior();
+                        break;
+                    case 'hunt_player':
+                        this.huntPlayerBehavior();
+                        break;
+                    case 'flee':
+                        this.fleeBehavior();
+                        break;
+                    case 'attack':
+                        this.attackBehavior();
+                        break;
+                }
+                
+                // Add some randomness to movement
+                this.angle += (Math.random() - 0.5) * 0.05 * (1 - this.intelligence);
+                
+                // Regenerate health slowly
+                if (this.health < 100) {
+                    this.health += 0.1;
+                }
+            }
+            
+            makeDecision() {
+                if (!player || !player.alive) {
+                    this.aiState = 'roam';
+                    return;
+                }
+                
+                const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
+                const playerSize = player.segments.length;
+                const botSize = this.segments.length;
+                
+                // Calculate danger level
+                const dangerLevel = playerSize / (botSize + 1);
+                
+                // Find closest food
+                let closestFood = null;
+                let foodDist = Infinity;
+                for (const food of foods) {
+                    const dist = Math.hypot(this.x - food.x, this.y - food.y);
+                    if (dist < foodDist) {
+                        foodDist = dist;
+                        closestFood = food;
+                    }
+                }
+                
+                // Decision making based on personality and situation
+                if (dangerLevel > 1.5 && distToPlayer < 300) {
+                    // Player is bigger and close - FLEE!
+                    this.aiState = 'flee';
+                    this.target = player;
+                } else if (dangerLevel < 0.8 && distToPlayer < 200 && this.personality === 'aggressive') {
+                    // Player is smaller and close - ATTACK!
+                    this.aiState = 'attack';
+                    this.target = player;
+                } else if (foodDist < 400 && this.health < 80) {
+                    // Hungry and food nearby
+                    this.aiState = 'hunt_food';
+                    this.target = closestFood;
+                } else if (this.personality === 'aggressive' && distToPlayer < 500) {
+                    // Aggressive bot will hunt player
+                    this.aiState = 'hunt_player';
+                    this.target = player;
                 } else {
-                    // Random movement
-                    this.angle += (Math.random() - 0.5) * 0.15;
-                }
-                
-                // Avoid player if too close
-                if (player && player.alive && !this.isBot) {
-                    const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
-                    if (distToPlayer < 200) {
-                        const runAngle = Math.atan2(this.y - player.y, this.x - player.x);
-                        let diff = runAngle - this.angle;
-                        while (diff > Math.PI) diff -= Math.PI * 2;
-                        while (diff < -Math.PI) diff += Math.PI * 2;
-                        
-                        this.angle += diff * 0.1;
+                    // Default: roam or hunt food
+                    if (foodDist < 500 && Math.random() < 0.7) {
+                        this.aiState = 'hunt_food';
+                        this.target = closestFood;
+                    } else {
+                        this.aiState = 'roam';
+                        this.target = null;
                     }
                 }
+            }
+            
+            roamBehavior() {
+                // Random movement with slight bias
+                this.angle += (Math.random() - 0.5) * 0.1;
+                
+                // Occasionally change direction
+                if (Math.random() < 0.01) {
+                    this.angle = Math.random() * Math.PI * 2;
+                }
+            }
+            
+            huntFoodBehavior() {
+                if (!this.target || this.target.value === undefined) {
+                    this.aiState = 'roam';
+                    return;
+                }
+                
+                const targetAngle = Math.atan2(
+                    this.target.y - this.y,
+                    this.target.x - this.x
+                );
+                
+                this.steerTowards(targetAngle, 0.15);
+                
+                // If food is eaten, find new target
+                if (Math.hypot(this.x - this.target.x, this.y - this.target.y) < 30) {
+                    this.target = null;
+                    this.aiState = 'roam';
+                }
+            }
+            
+            huntPlayerBehavior() {
+                if (!player || !player.alive) {
+                    this.aiState = 'roam';
+                    return;
+                }
+                
+                const targetAngle = Math.atan2(
+                    player.y - this.y,
+                    player.x - this.x
+                );
+                
+                this.steerTowards(targetAngle, 0.12);
+                
+                // Keep distance
+                const dist = Math.hypot(this.x - player.x, this.y - player.y);
+                if (dist < 100) {
+                    this.angle += Math.PI * 0.5; // Circle around player
+                }
+            }
+            
+            fleeBehavior() {
+                if (!player || !player.alive) {
+                    this.aiState = 'roam';
+                    return;
+                }
+                
+                const fleeAngle = Math.atan2(
+                    this.y - player.y,
+                    this.x - player.x
+                );
+                
+                this.steerTowards(fleeAngle, 0.2);
+                
+                // Stop fleeing when safe
+                const dist = Math.hypot(this.x - player.x, this.y - player.y);
+                if (dist > 400) {
+                    this.aiState = 'roam';
+                }
+            }
+            
+            attackBehavior() {
+                if (!player || !player.alive) {
+                    this.aiState = 'roam';
+                    return;
+                }
+                
+                // Try to bite player's tail
+                let targetSegment = player.segments[Math.floor(player.segments.length * 0.8)];
+                if (!targetSegment) targetSegment = player.segments[0];
+                
+                const targetAngle = Math.atan2(
+                    targetSegment.y - this.y,
+                    targetSegment.x - this.x
+                );
+                
+                this.steerTowards(targetAngle, 0.18);
+                
+                // Check if can bite
+                const dist = Math.hypot(this.x - targetSegment.x, this.y - targetSegment.y);
+                if (dist < 30) {
+                    // Bite attempt
+                    this.experience += 10;
+                    if (this.experience > this.level * 100) {
+                        this.level++;
+                        this.health = 100;
+                        this.speed *= 1.05;
+                        this.radius *= 1.05;
+                    }
+                }
+            }
+            
+            steerTowards(targetAngle, strength) {
+                let diff = targetAngle - this.angle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                
+                this.angle += diff * strength * this.intelligence;
             }
             
             draw() {
                 if (!this.alive) return;
                 
-                // Draw body with gradient effect
                 ctx.save();
                 
-                // Body with gradient
-                ctx.lineWidth = 16;
+                // Draw body dengan efek gradient
+                ctx.lineWidth = this.isBot ? 12 : 14;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 
-                if (this.color.includes('gradient')) {
-                    // Handle gradient colors
+                // Gradient effect for bots
+                if (this.isBot) {
                     const gradient = ctx.createLinearGradient(
                         this.segments[0].x - viewport.x,
                         this.segments[0].y - viewport.y,
@@ -1089,24 +993,44 @@ class Bot {
                         this.segments[this.segments.length - 1].y - viewport.y
                     );
                     
-                    if (this.color.includes('rainbow')) {
-                        gradient.addColorStop(0, '#ff0000');
-                        gradient.addColorStop(0.2, '#ffff00');
-                        gradient.addColorStop(0.4, '#00ff00');
-                        gradient.addColorStop(0.6, '#00ffff');
-                        gradient.addColorStop(0.8, '#0000ff');
-                        gradient.addColorStop(1, '#ff00ff');
-                    } else {
-                        gradient.addColorStop(0, this.color);
-                        gradient.addColorStop(1, this.color + 'aa');
-                    }
+                    gradient.addColorStop(0, this.color);
+                    gradient.addColorStop(0.5, this.color + 'cc');
+                    gradient.addColorStop(1, this.color + '99');
                     
                     ctx.strokeStyle = gradient;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
                 } else {
-                    ctx.strokeStyle = this.color;
+                    if (this.color.includes('gradient')) {
+                        // Handle gradient colors for player
+                        const gradient = ctx.createLinearGradient(
+                            this.segments[0].x - viewport.x,
+                            this.segments[0].y - viewport.y,
+                            this.segments[this.segments.length - 1].x - viewport.x,
+                            this.segments[this.segments.length - 1].y - viewport.y
+                        );
+                        
+                        if (this.color.includes('rainbow')) {
+                            gradient.addColorStop(0, '#ff0000');
+                            gradient.addColorStop(0.2, '#ffff00');
+                            gradient.addColorStop(0.4, '#00ff00');
+                            gradient.addColorStop(0.6, '#00ffff');
+                            gradient.addColorStop(0.8, '#0000ff');
+                            gradient.addColorStop(1, '#ff00ff');
+                        } else {
+                            gradient.addColorStop(0, this.color);
+                            gradient.addColorStop(1, this.color + 'aa');
+                        }
+                        
+                        ctx.strokeStyle = gradient;
+                    } else {
+                        ctx.strokeStyle = this.color;
+                    }
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = this.color;
                 }
                 
-                // Draw body
+                // Draw body dengan kurva smooth
                 ctx.beginPath();
                 for (let i = 0; i < this.segments.length; i++) {
                     const seg = this.segments[i];
@@ -1118,34 +1042,72 @@ class Bot {
                 }
                 ctx.stroke();
                 
-                // Draw head with glow
+                // Draw head dengan detail
                 const head = this.segments[0];
-                ctx.fillStyle = this.isBot ? '#ff6666' : 'white';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.isBot ? '#ff4444' : 'white';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.isBot ? '#ff4444' : this.color;
                 ctx.beginPath();
                 ctx.arc(head.x - viewport.x, head.y - viewport.y, this.radius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0;
                 
-                // Draw eyes
-                ctx.fillStyle = 'black';
-                const eyeOffset = 4;
+                // Draw eyes dengan ekspresi
+                ctx.fillStyle = this.isBot ? '#222' : 'black';
+                const eyeOffset = 5;
+                const eyeSize = this.isBot ? 2.5 : 3;
+                
+                // Eyes follow direction
+                const eyeDX = Math.cos(this.angle) * 3;
+                const eyeDY = Math.sin(this.angle) * 3;
+                
                 ctx.beginPath();
-                ctx.arc(head.x - viewport.x - eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(head.x - viewport.x + eyeOffset, head.y - viewport.y - 4, 3, 0, Math.PI * 2);
+                ctx.arc(head.x - viewport.x - eyeOffset + eyeDX, 
+                       head.y - viewport.y - 3 + eyeDY, eyeSize, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Draw name
-                if (!this.isBot) {
+                ctx.beginPath();
+                ctx.arc(head.x - viewport.x + eyeOffset + eyeDX, 
+                       head.y - viewport.y - 3 + eyeDY, eyeSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw bot health bar
+                if (this.isBot && showBotInfo) {
+                    const healthBarWidth = 40;
+                    const healthBarHeight = 4;
+                    const healthBarX = head.x - viewport.x - healthBarWidth / 2;
+                    const healthBarY = head.y - viewport.y - 35;
+                    
+                    // Background
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                    
+                    // Health
+                    const healthWidth = (this.health / 100) * healthBarWidth;
+                    ctx.fillStyle = this.health > 50 ? '#22c55e' : 
+                                   this.health > 25 ? '#f59e0b' : '#ef4444';
+                    ctx.fillRect(healthBarX, healthBarY, healthWidth, healthBarHeight);
+                    
+                    // Border
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                    
+                    // Bot name and level
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 11px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${this.name} Lv${this.level}`, 
+                                head.x - viewport.x, 
+                                head.y - viewport.y - 45);
+                } else if (!this.isBot) {
+                    // Draw player name
                     ctx.fillStyle = 'white';
                     ctx.font = 'bold 14px Arial';
                     ctx.textAlign = 'center';
                     ctx.fillText(this.name, head.x - viewport.x, head.y - viewport.y - 25);
                 }
                 
+                ctx.shadowBlur = 0;
                 ctx.restore();
             }
         }
@@ -1162,7 +1124,7 @@ class Bot {
         }
         
         function startGame() {
-            console.log('Starting game...');
+            console.log('Starting game with enhanced bots...');
             
             // Hide menus
             document.getElementById('main-menu').classList.add('hidden');
@@ -1183,17 +1145,18 @@ class Bot {
             stats = { coins: 0, length: 15, kills: 0, score: 0 };
             
             // Spawn LOTS of food
-            for (let i = 0; i < 80; i++) {
+            for (let i = 0; i < 100; i++) {
                 spawnFood(true);
             }
             
-            // Spawn bots
-            for (let i = 0; i < 12; i++) {
-                spawnBot();
+            // Spawn enhanced bots
+            for (let i = 0; i < 8; i++) {
+                spawnEnhancedBot();
             }
             
             // Update UI
             updateGameUI();
+            updateBotInfo();
             
             // Start game loop
             requestAnimationFrame(gameLoop);
@@ -1203,23 +1166,25 @@ class Bot {
             let x, y;
             
             if (initial) {
-                x = (Math.random() - 0.5) * 4000;
-                y = (Math.random() - 0.5) * 4000;
+                x = (Math.random() - 0.5) * 5000;
+                y = (Math.random() - 0.5) * 5000;
             } else {
                 // Spawn near player
                 const angle = Math.random() * Math.PI * 2;
-                const distance = 150 + Math.random() * 350;
+                const distance = 200 + Math.random() * 400;
                 x = player.x + Math.cos(angle) * distance;
                 y = player.y + Math.sin(angle) * distance;
             }
             
             const foodTypes = [
-                { emoji: '🍎', color: '#ef4444', value: 5 },
-                { emoji: '🍌', color: '#fbbf24', value: 8 },
-                { emoji: '🍇', color: '#8b5cf6', value: 6 },
-                { emoji: '🍒', color: '#dc2626', value: 7 },
-                { emoji: '🥝', color: '#22c55e', value: 6 },
-                { emoji: '🍓', color: '#ec4899', value: 8 }
+                { emoji: '🍎', color: '#ef4444', value: 5, size: 28 },
+                { emoji: '🍌', color: '#fbbf24', value: 8, size: 26 },
+                { emoji: '🍇', color: '#8b5cf6', value: 6, size: 24 },
+                { emoji: '🍒', color: '#dc2626', value: 7, size: 22 },
+                { emoji: '🥝', color: '#22c55e', value: 6, size: 26 },
+                { emoji: '🍓', color: '#ec4899', value: 8, size: 24 },
+                { emoji: '🍊', color: '#ea580c', value: 7, size: 28 },
+                { emoji: '🍉', color: '#dc2626', value: 10, size: 32 }
             ];
             
             const food = foodTypes[Math.floor(Math.random() * foodTypes.length)];
@@ -1230,70 +1195,53 @@ class Bot {
                 emoji: food.emoji,
                 color: food.color,
                 value: food.value,
-                rotation: Math.random() * Math.PI * 2
+                size: food.size,
+                rotation: Math.random() * Math.PI * 2,
+                float: Math.random() * Math.PI * 2
             });
         }
-
-        function spawnBot() {
-    // Posisi spawn random di sekitar player
-    const angle = Math.random() * Math.PI * 2;
-    const distance = 300 + Math.random() * 400;
-    const x = player ? player.x + Math.cos(angle) * distance : (Math.random() - 0.5) * 2000;
-    const y = player ? player.y + Math.sin(angle) * distance : (Math.random() - 0.5) * 2000;
-    
-    // Buat bot dengan bentuk cacing
-    const bot = new Bot(x, y, 'bot_skin', '');
-    
-    // Beri kemampuan khusus berdasarkan level
-    const botLevel = Math.floor(Math.random() * 3); // 0, 1, atau 2
-    
-    if (botLevel === 1) {
-        // Bot level 1: Lebih cepat
-        bot.speed += 0.3;
-        bot.name = '⚡ ' + bot.name;
-    } else if (botLevel === 2) {
-        // Bot level 2: Lebih panjang
-        for (let i = 0; i < 5; i++) {
-            const tail = bot.segments[bot.segments.length - 1];
-            bot.segments.push({ x: tail.x, y: tail.y });
-        }
-        bot.name = '💪 ' + bot.name;
-    }
-    
-    bots.push(bot);
-    
-    // Show notification untuk bot khusus
-    if (botLevel > 0) {
-        showNotification(`🤖 ${bot.name} muncul di arena!`, '#ef4444');
-    }
-}
         
-      
+        function spawnEnhancedBot() {
+            const botSkin = botSkins[Math.floor(Math.random() * botSkins.length)];
+            const botName = botNames[Math.floor(Math.random() * botNames.length)];
             
-            // Spawn bot away from player
+            // Spawn bot at safe distance from player
             const angle = Math.random() * Math.PI * 2;
-            const distance = 250 + Math.random() * 350;
-            const x = player ? player.x + Math.cos(angle) * distance : 0;
-            const y = player ? player.y + Math.sin(angle) * distance : 0;
+            const distance = 300 + Math.random() * 400;
+            const x = player ? player.x + Math.cos(angle) * distance : (Math.random() - 0.5) * 3000;
+            const y = player ? player.y + Math.sin(angle) * distance : (Math.random() - 0.5) * 3000;
             
-            bots.push(new Snake(x, y, 'default', 'Bot ' + (bots.length + 1), true));
+            const bot = new Snake(x, y, botSkin.id, botName, true);
+            
+            // Randomize bot length
+            const extraSegments = Math.floor(Math.random() * 15);
+            for (let i = 0; i < extraSegments; i++) {
+                const tail = bot.segments[bot.segments.length - 1];
+                bot.segments.push({ x: tail.x, y: tail.y, width: 14 });
+            }
+            
+            bots.push(bot);
+            return bot;
         }
         
         function gameLoop() {
             if (!gameActive) return;
             
             // Clear canvas with fade effect for smooth scroll
-            ctx.fillStyle = 'rgba(5, 5, 21, 0.1)';
+            ctx.fillStyle = 'rgba(5, 5, 21, 0.08)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Update viewport with smooth follow
             if (player && player.alive) {
-                viewport.x += (player.x - viewport.x - canvas.width / 2) * 0.1;
-                viewport.y += (player.y - viewport.y - canvas.height / 2) * 0.1;
+                viewport.x += (player.x - viewport.x - canvas.width / 2) * 0.08;
+                viewport.y += (player.y - viewport.y - canvas.height / 2) * 0.08;
             }
             
-            // Draw infinite grid
+            // Draw infinite grid with perspective
             drawGrid();
+            
+            // Draw background stars/particles
+            drawBackgroundParticles();
             
             // Update and draw player
             if (player && player.alive) {
@@ -1303,73 +1251,127 @@ class Bot {
                 // Check collisions
                 checkFoodCollisions();
                 checkBotCollisions();
+                checkBotBodyCollisions();
             }
             
             // Update and draw bots
+            let aliveBots = 0;
             bots.forEach(bot => {
                 if (bot.alive) {
+                    aliveBots++;
                     bot.update();
                     bot.draw();
                     
-                    // Bot vs Bot - no death, just bounce
+                    // Bot vs Bot interactions
                     bots.forEach(otherBot => {
                         if (bot !== otherBot && bot.alive && otherBot.alive) {
                             const dist = Math.hypot(bot.x - otherBot.x, bot.y - otherBot.y);
-                            if (dist < 20) {
-                                // Bounce
-                                const temp = bot.angle;
-                                bot.angle = otherBot.angle;
-                                otherBot.angle = temp;
+                            if (dist < 30) {
+                                // Avoid each other
+                                const avoidAngle = Math.atan2(bot.y - otherBot.y, bot.x - otherBot.x);
+                                bot.angle = avoidAngle;
                             }
                         }
                     });
+                    
+                    // Bot eat food
+                    checkBotFoodCollisions(bot);
                 }
             });
             
-            // Draw foods with rotation
+            // Draw foods with animation
             drawFoods();
+            
+            // Update UI
+            updateBotInfo();
+            
+            // Spawn more food occasionally
+            if (foods.length < 60 && Math.random() < 0.02) {
+                spawnFood();
+            }
+            
+            // Spawn more bots if needed
+            if (aliveBots < 6 && Math.random() < 0.01) {
+                spawnEnhancedBot();
+            }
             
             // Continue loop
             requestAnimationFrame(gameLoop);
         }
         
         function drawGrid() {
-            const gridSize = 100;
+            const gridSize = 120;
             const startX = Math.floor(viewport.x / gridSize) * gridSize;
             const startY = Math.floor(viewport.y / gridSize) * gridSize;
             
-            ctx.strokeStyle = 'rgba(168, 85, 247, 0.03)';
-            ctx.lineWidth = 1;
-            
-            // Vertical lines
+            // Perspective grid
             for (let x = startX; x < startX + canvas.width + gridSize; x += gridSize) {
+                const lineX = x - viewport.x;
+                const alpha = 0.03 + (Math.abs(lineX - canvas.width/2) / canvas.width) * 0.02;
+                
+                ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(x - viewport.x, 0);
-                ctx.lineTo(x - viewport.x, canvas.height);
+                ctx.moveTo(lineX, 0);
+                ctx.lineTo(lineX, canvas.height);
                 ctx.stroke();
             }
             
-            // Horizontal lines
             for (let y = startY; y < startY + canvas.height + gridSize; y += gridSize) {
+                const lineY = y - viewport.y;
+                const alpha = 0.03 + (Math.abs(lineY - canvas.height/2) / canvas.height) * 0.02;
+                
+                ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(0, y - viewport.y);
-                ctx.lineTo(canvas.width, y - viewport.y);
+                ctx.moveTo(0, lineY);
+                ctx.lineTo(canvas.width, lineY);
                 ctx.stroke();
             }
         }
         
+        function drawBackgroundParticles() {
+            // Draw some floating particles in background
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.05)';
+            for (let i = 0; i < 20; i++) {
+                const x = (viewport.x * 0.1 + i * 100) % 1000 - 500;
+                const y = (viewport.y * 0.1 + i * 70) % 1000 - 500;
+                const size = 2 + Math.sin(Date.now() * 0.001 + i) * 1;
+                
+                ctx.beginPath();
+                ctx.arc(x - viewport.x, y - viewport.y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
         function drawFoods() {
+            const time = Date.now() * 0.001;
+            
             foods.forEach(food => {
                 ctx.save();
-                ctx.translate(food.x - viewport.x, food.y - viewport.y);
-                food.rotation += 0.02; // Smooth rotation
+                
+                // Floating animation
+                food.float += 0.05;
+                const floatY = Math.sin(food.float) * 8;
+                food.rotation += 0.03;
+                
+                ctx.translate(food.x - viewport.x, food.y - viewport.y + floatY);
                 ctx.rotate(food.rotation);
                 
+                // Glow effect
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = food.color;
+                
+                // Draw food
                 ctx.fillStyle = food.color;
-                ctx.font = '28px Arial';
+                ctx.font = `${food.size}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(food.emoji, 0, 0);
+                
+                // Pulse effect
+                const pulse = Math.sin(time * 2 + food.x * 0.01) * 0.2 + 0.8;
+                ctx.globalAlpha = pulse;
                 
                 ctx.restore();
             });
@@ -1382,19 +1384,19 @@ class Bot {
                 const food = foods[i];
                 const dist = Math.hypot(player.x - food.x, player.y - food.y);
                 
-                if (dist < 25) {
+                if (dist < 28) {
                     // Eat food
                     foods.splice(i, 1);
                     
-                    // Grow
-                    for (let j = 0; j < 3; j++) {
+                    // Grow player
+                    for (let j = 0; j < 4; j++) {
                         const tail = player.segments[player.segments.length - 1];
-                        player.segments.push({ x: tail.x, y: tail.y });
+                        player.segments.push({ x: tail.x, y: tail.y, width: 16 });
                     }
                     
                     // Add stats
-                    playerData.coins += 3;
-                    stats.coins += 3;
+                    playerData.coins += 2;
+                    stats.coins += 2;
                     player.score += food.value;
                     stats.score += food.value;
                     stats.length = player.segments.length;
@@ -1413,119 +1415,220 @@ class Bot {
             }
         }
         
+        function checkBotFoodCollisions(bot) {
+            if (!bot.alive) return;
+            
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const food = foods[i];
+                const dist = Math.hypot(bot.x - food.x, bot.y - food.y);
+                
+                if (dist < 25) {
+                    // Bot eats food
+                    foods.splice(i, 1);
+                    
+                    // Bot grows
+                    for (let j = 0; j < 2; j++) {
+                        const tail = bot.segments[bot.segments.length - 1];
+                        bot.segments.push({ x: tail.x, y: tail.y, width: 14 });
+                    }
+                    
+                    // Bot gains health
+                    bot.health = Math.min(100, bot.health + 10);
+                    bot.experience += 5;
+                    
+                    // Level up
+                    if (bot.experience > bot.level * 100) {
+                        bot.level++;
+                        bot.health = 100;
+                        bot.speed *= 1.05;
+                        bot.radius *= 1.05;
+                    }
+                    
+                    // Spawn new food
+                    spawnFood();
+                    
+                    break;
+                }
+            }
+        }
+        
         function checkBotCollisions() {
             if (!player || !player.alive) return;
             
-            const head = player.segments[0];
+            const playerHead = player.segments[0];
+            const playerSize = player.segments.length;
             
             for (let i = bots.length - 1; i >= 0; i--) {
                 const bot = bots[i];
                 if (!bot.alive) continue;
                 
-                // Check collision with bot
-                const dist = Math.hypot(head.x - bot.x, head.y - bot.y);
-                if (dist < player.radius + bot.radius) {
-                    // PLAYER EATS BOT
-                    eatBot(i);
-                    return;
+                const botHead = bot.segments[0];
+                const botSize = bot.segments.length;
+                
+                // Check head collision
+                const dist = Math.hypot(playerHead.x - botHead.x, playerHead.y - botHead.y);
+                const collisionDist = player.radius + bot.radius;
+                
+                if (dist < collisionDist) {
+                    // Head-to-head collision
+                    if (playerSize > botSize * 1.2) {
+                        // Player eats bot
+                        eatBot(i);
+                        return;
+                    } else if (botSize > playerSize * 1.2) {
+                        // Bot eats player
+                        playerDie();
+                        return;
+                    } else {
+                        // Bounce off
+                        const temp = player.angle;
+                        player.angle = bot.angle + Math.PI;
+                        bot.angle = temp + Math.PI;
+                        
+                        // Damage both
+                        player.segments.pop();
+                        player.segments.pop();
+                        bot.segments.pop();
+                        bot.health -= 20;
+                        
+                        showNotification('💥 TABRAKAN!', '#f59e0b');
+                        playSound('collision');
+                    }
                 }
+            }
+        }
+        
+        function checkBotBodyCollisions() {
+            if (!player || !player.alive) return;
+            
+            const playerHead = player.segments[0];
+            
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot = bots[i];
+                if (!bot.alive) continue;
                 
                 // Check collision with bot body
-                for (let j = 0; j < bot.segments.length; j++) {
+                for (let j = 3; j < bot.segments.length; j++) {
                     const segment = bot.segments[j];
-                    const bodyDist = Math.hypot(head.x - segment.x, head.y - segment.y);
+                    const dist = Math.hypot(playerHead.x - segment.x, playerHead.y - segment.y);
                     
-                    if (bodyDist < player.radius + 5) {
-                        eatBot(i);
+                    if (dist < player.radius + 5) {
+                        // Player bites bot body
+                        bot.health -= 25;
+                        
+                        // Cut bot at collision point
+                        if (bot.health <= 0 || Math.random() < 0.3) {
+                            eatBot(i);
+                        } else {
+                            // Remove some bot segments
+                            const segmentsToRemove = Math.min(5, bot.segments.length - j);
+                            bot.segments.splice(j, segmentsToRemove);
+                            
+                            // Create food from cut segments
+                            for (let k = 0; k < segmentsToRemove; k++) {
+                                foods.push({
+                                    x: segment.x + (Math.random() - 0.5) * 30,
+                                    y: segment.y + (Math.random() - 0.5) * 30,
+                                    emoji: '🍖',
+                                    color: '#dc2626',
+                                    value: 15,
+                                    size: 22,
+                                    rotation: Math.random() * Math.PI * 2,
+                                    float: Math.random() * Math.PI * 2
+                                });
+                            }
+                            
+                            showNotification('✂️ BOT TERPOTONG!', '#22c55e');
+                            playSound('cut');
+                        }
+                        return;
+                    }
+                }
+                
+                // Bot bites player body
+                const botHead = bot.segments[0];
+                for (let j = 3; j < player.segments.length; j++) {
+                    const segment = player.segments[j];
+                    const dist = Math.hypot(botHead.x - segment.x, botHead.y - segment.y);
+                    
+                    if (dist < bot.radius + 5 && bot.aiState === 'attack') {
+                        // Bot bites player
+                        const segmentsToRemove = Math.min(3, player.segments.length - j);
+                        player.segments.splice(j, segmentsToRemove);
+                        
+                        // Create food from cut segments
+                        for (let k = 0; k < segmentsToRemove; k++) {
+                            foods.push({
+                                x: segment.x + (Math.random() - 0.5) * 30,
+                                y: segment.y + (Math.random() - 0.5) * 30,
+                                emoji: '🍖',
+                                color: player.color,
+                                value: 20,
+                                size: 24,
+                                rotation: Math.random() * Math.PI * 2,
+                                float: Math.random() * Math.PI * 2
+                            });
+                        }
+                        
+                        showNotification('💢 BOT GIGIT EKOR!', '#ef4444');
+                        playSound('hurt');
                         return;
                     }
                 }
             }
         }
         
-        
-            function eatBot(botIndex) {
-    const bot = bots[botIndex];
-    
-    // Efek visual sebelum bot mati
-    ctx.save();
-    const head = bot.segments[0];
-    ctx.fillStyle = '#ff0000';
-    ctx.globalAlpha = 0.7;
-    ctx.beginPath();
-    ctx.arc(head.x - viewport.x, head.y - viewport.y, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    
-    // Bot mati
-    bot.alive = false;
-    
-    // Tambah rewards
-    const killReward = 50 + Math.floor(bot.segments.length / 3) * 10;
-    playerData.coins += killReward;
-    stats.coins += killReward;
-    player.score += killReward * 2;
-    stats.score += killReward * 2;
-    stats.kills++;
-    
-    // Show notification dengan info bot
-    showNotification(`⚔️ ${bot.name} DIMAKAN! +${killReward}🪙`, '#22c55e');
-    
-    // Spawn makanan khusus dari bot mati
-    const foodCount = Math.min(bot.segments.length, 15);
-    for (let i = 0; i < foodCount; i++) {
-        const idx = Math.floor(i * bot.segments.length / foodCount);
-        const segment = bot.segments[idx];
-        
-        foods.push({
-            x: segment.x + (Math.random() - 0.5) * 40,
-            y: segment.y + (Math.random() - 0.5) * 40,
-            emoji: ['🍖', '🍗', '🥩', '🍔', '🌭'][Math.floor(Math.random() * 5)],
-            color: '#8b0000',
-            value: 15,
-            rotation: Math.random() * Math.PI * 2
-        });
-    }
-    
-    // Remove bot
-    bots.splice(botIndex, 1);
-    
-    // Update UI
-    updateGameUI();
-    saveGameData();
-    
-    // Spawn bot baru setelah delay
-    setTimeout(() => {
-        if (gameActive && player.alive) {
-            spawnBot();
-        }
-    }, 3000);
-}
-            // Bot dies
+        function eatBot(botIndex) {
+            const bot = bots[botIndex];
+            
+            // Bot dies dengan efek
             bot.alive = false;
             
             // Add rewards
-            playerData.coins += 25;
-            stats.coins += 25;
-            player.score += 75;
-            stats.score += 75;
+            const reward = 30 + bot.level * 10;
+            playerData.coins += reward;
+            stats.coins += reward;
+            player.score += 100 + bot.level * 20;
+            stats.score += 100 + bot.level * 20;
             stats.kills++;
             
+            // Update high score
+            if (player.score > playerData.highScore) {
+                playerData.highScore = player.score;
+                localStorage.setItem('cacing_high_score', playerData.highScore);
+            }
+            
             // Show notification
-            showNotification(`⚔️ BOT DIMAKAN! +75 poin`, '#22c55e');
+            showNotification(`⚔️ ${bot.name} DIMAKAN! +${100 + bot.level * 20} poin`, '#22c55e');
             
             // Play sound
             playSound('kill');
             
             // Spawn food from dead bot
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 8; i++) {
                 foods.push({
-                    x: bot.x + (Math.random() - 0.5) * 50,
-                    y: bot.y + (Math.random() - 0.5) * 50,
-                    emoji: '🍎',
-                    color: '#ef4444',
-                    value: 10,
-                    rotation: Math.random() * Math.PI * 2
+                    x: bot.x + (Math.random() - 0.5) * 60,
+                    y: bot.y + (Math.random() - 0.5) * 60,
+                    emoji: ['🍖', '🍗', '🥩'][Math.floor(Math.random() * 3)],
+                    color: bot.color,
+                    value: 15,
+                    size: 24,
+                    rotation: Math.random() * Math.PI * 2,
+                    float: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Spawn coins
+            for (let i = 0; i < 3; i++) {
+                foods.push({
+                    x: bot.x + (Math.random() - 0.5) * 40,
+                    y: bot.y + (Math.random() - 0.5) * 40,
+                    emoji: '🪙',
+                    color: '#ffd700',
+                    value: 25,
+                    size: 26,
+                    rotation: Math.random() * Math.PI * 2,
+                    float: Math.random() * Math.PI * 2
                 });
             }
             
@@ -1536,12 +1639,57 @@ class Bot {
             updateGameUI();
             saveGameData();
             
-            // Spawn new bot after delay
+            // Spawn new enhanced bot after delay
             setTimeout(() => {
                 if (gameActive && player.alive) {
-                    spawnBot();
+                    spawnEnhancedBot();
                 }
-            }, 3000);
+            }, 5000);
+        }
+        
+        function playerDie() {
+            if (!player || !player.alive) return;
+            
+            player.alive = false;
+            
+            // Create explosion effect
+            for (let i = 0; i < 15; i++) {
+                foods.push({
+                    x: player.x + (Math.random() - 0.5) * 80,
+                    y: player.y + (Math.random() - 0.5) * 80,
+                    emoji: '💥',
+                    color: '#ef4444',
+                    value: 0,
+                    size: 32,
+                    rotation: Math.random() * Math.PI * 2,
+                    float: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Show game over
+            setTimeout(() => {
+                showNotification(`💀 GAME OVER! Score: ${player.score}`, '#ef4444');
+                playSound('gameover');
+                
+                // Return to menu after delay
+                setTimeout(() => {
+                    endGame();
+                }, 3000);
+            }, 500);
+        }
+        
+        function endGame() {
+            gameActive = false;
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            
+            // Update high score display
+            if (player) {
+                const highScoreElement = document.querySelector('.high-score');
+                if (highScoreElement) {
+                    highScoreElement.textContent = `High Score: ${playerData.highScore}`;
+                }
+            }
         }
         
         function updateGameUI() {
@@ -1553,10 +1701,36 @@ class Bot {
             document.getElementById('score-display').textContent = player.score;
         }
         
+        function updateBotInfo() {
+            if (!showBotInfo) return;
+            
+            const aliveBots = bots.filter(b => b.alive).length;
+            const totalBots = bots.length;
+            
+            document.getElementById('bot-count-display').textContent = 
+                `${aliveBots}/${totalBots} bots alive`;
+                
+            // Show average bot level
+            if (aliveBots > 0) {
+                const avgLevel = Math.round(bots.reduce((sum, b) => sum + (b.alive ? b.level : 0), 0) / aliveBots);
+                document.getElementById('bot-count-display').textContent += 
+                    ` | Avg Lv: ${avgLevel}`;
+            }
+        }
+        
+        function toggleBotInfo() {
+            showBotInfo = !showBotInfo;
+            const panel = document.getElementById('bot-info-panel');
+            panel.classList.toggle('hidden');
+            
+            showNotification(showBotInfo ? '🤖 Bot info enabled' : '🤖 Bot info disabled', '#3b82f6');
+        }
+        
         function saveGameData() {
             localStorage.setItem('cacing_coins', playerData.coins);
             localStorage.setItem('cacing_skins', JSON.stringify(playerData.skins));
             localStorage.setItem('cacing_active_skin', playerData.activeSkin);
+            localStorage.setItem('cacing_high_score', playerData.highScore);
         }
         
         // =============================================
@@ -1837,26 +2011,52 @@ class Bot {
                 switch(type) {
                     case 'eat':
                         oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                        oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.1);
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.15);
+                        gainNode.gain.setValueAtTime(0.12, audioContext.currentTime);
+                        oscillator.type = 'sine';
                         break;
                     case 'kill':
                         oscillator.type = 'sawtooth';
-                        oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-                        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
-                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        oscillator.frequency.setValueAtTime(120, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
                         break;
                     case 'buy':
                     case 'reward':
+                        oscillator.type = 'triangle';
+                        oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.25);
+                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        break;
+                    case 'collision':
+                        oscillator.type = 'square';
+                        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
+                        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
+                        break;
+                    case 'cut':
+                        oscillator.type = 'sine';
                         oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        break;
+                    case 'hurt':
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        break;
+                    case 'gameover':
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                         break;
                 }
                 
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                 oscillator.start();
-                setTimeout(() => oscillator.stop(), 200);
+                setTimeout(() => oscillator.stop(), 300);
                 
             } catch (error) {
                 // Audio not supported
@@ -1925,6 +2125,13 @@ class Bot {
                 case 'd':
                     player.angle = 0;
                     break;
+                case ' ':
+                    // Speed boost
+                    player.speed = 5;
+                    setTimeout(() => {
+                        if (player && player.alive) player.speed = 3.5;
+                    }, 300);
+                    break;
             }
         });
         
@@ -1958,7 +2165,39 @@ class Bot {
             while (diff > Math.PI) diff -= Math.PI * 2;
             while (diff < -Math.PI) diff += Math.PI * 2;
             
-            player.angle += diff * 0.2;
+            player.angle += diff * 0.25;
+        }
+        
+        // =============================================
+        // INITIALIZE GAME
+        // =============================================
+        function init() {
+            console.log('Initializing Cacing Arena Enhanced...');
+            
+            // Initialize player ID
+            if (!playerData.id) {
+                playerData.id = Math.floor(1000 + Math.random() * 9000).toString();
+                localStorage.setItem('cacing_player_id', playerData.id);
+            }
+            
+            // Update UI
+            document.getElementById('player-id-display').textContent = playerData.id;
+            document.getElementById('player-name').value = playerData.name;
+            document.getElementById('coin-display').textContent = playerData.coins;
+            
+            // Initialize multiplayer
+            initMultiplayer();
+            
+            // Initialize shop
+            initShop();
+            
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+            }, 1000);
+            
+            console.log('Game initialized with enhanced bots!');
         }
         
         // =============================================
@@ -1969,7 +2208,7 @@ class Bot {
         // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
         
-        console.log('Cacing Arena Ultimate ready!');
+        console.log('Cacing Arena Ultimate with Enhanced Bots ready!');
     </script>
 </body>
 </html>
