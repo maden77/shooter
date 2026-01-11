@@ -3,50 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snake Master: Infinite Zone</title>
+    <title>Snake Master Pro PWA</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        :root { --neon: #00f2ff; --gold: #ffd700; --bg: #05050a; --danger: #ff0055; }
+        :root { --neon: #00f2ff; --gold: #ffd700; --bg: #0a0a12; --danger: #ff0055; }
         body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
         canvas { display: block; }
 
-        /* --- UI --- */
+        /* --- UI OVERLAY --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .pointer { pointer-events: auto; }
         
+        /* Stats Top */
         #stats-bar { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .box { background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--neon); font-size: 13px; width: fit-content; backdrop-filter: blur(5px); }
+        .box { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 15px; border: 1px solid var(--neon); font-size: 13px; width: fit-content; backdrop-filter: blur(5px); }
 
-        .menu-btns { position: absolute; top: 100px; left: 15px; }
-        button { background: rgba(255,255,255,0.1); border: 1px solid var(--neon); color: white; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        /* Buttons */
+        .menu-btns { position: absolute; top: 120px; left: 15px; display: flex; flex-direction: column; gap: 10px; }
+        button { background: rgba(255,255,255,0.1); border: 1px solid var(--neon); color: white; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 2px solid rgba(0,242,255,0.2); }
-        #joy-stick { position: absolute; top: 25px; left: 25px; width: 50px; height: 50px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 15px var(--neon); opacity: 0.6; }
+        /* Joystick */
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(0,242,255,0.3); }
+        #joy-stick { position: absolute; top: 25px; left: 25px; width: 50px; height: 50px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 15px var(--neon); }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: #0a0a1a; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; border: 2px solid var(--neon); text-align: center; }
+        /* Modal System */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: #16213e; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; border: 2px solid var(--neon); text-align: center; }
         .hidden { display: none !important; }
-        
+
+        /* Grid Shop/Quest */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .card { background: #111; padding: 10px; border-radius: 10px; border: 1px solid #333; cursor: pointer; }
+        .card { background: #1a1a2e; padding: 10px; border-radius: 10px; border: 1px solid #444; }
         .card.active { border-color: var(--neon); background: rgba(0,242,255,0.1); }
+        
+        input { padding: 12px; border-radius: 8px; border: 1px solid var(--neon); background: #111; color: white; width: 80%; margin: 10px 0; font-size: 18px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="lobby" class="modal">
         <div class="modal-content">
-            <h1 style="color:var(--neon); letter-spacing: 2px;">SNAKE MASTER</h1>
-            <button style="width:100%; margin-bottom:10px" onclick="startGame()">MASUK KE DUNIA</button>
-            <p style="font-size: 12px; color: #666;">Dunia Tanpa Batas & Bot Pintar Aktif</p>
+            <h1 style="color:var(--neon)">SNAKE MASTER</h1>
+            <div id="main-menu">
+                <button style="width:100%; margin-bottom:10px" onclick="startSinglePlayer()">👤 SOLO VS BOT</button>
+                <button style="width:100%; margin-bottom:10px" class="pointer" onclick="openMultiplayer()">🎮 MABAR (WIFI)</button>
+            </div>
+            
+            <div id="multi-menu" class="hidden">
+                <div id="host-zone">
+                    <p>ID KAMU: <span id="my-id" style="color:var(--gold); font-weight:bold; font-size:24px">....</span></p>
+                    <button onclick="createRoom()">👑 BUAT ROOM</button>
+                </div>
+                <hr style="margin:20px 0; border:0; border-top:1px solid #444">
+                <input type="number" id="join-id" placeholder="ID TEMAN">
+                <button onclick="joinRoom()">🔗 GABUNG</button>
+                <br><br>
+                <button onclick="backToMain()">KEMBALI</button>
+            </div>
         </div>
     </div>
 
     <div id="game-over" class="modal hidden">
         <div class="modal-content">
-            <h2 style="color:var(--danger)">GAME OVER</h2>
+            <h2 style="color:var(--danger)">MATI!</h2>
             <p id="final-score">Skor: 0</p>
-            <button onclick="location.reload()">COBA LAGI</button>
+            <button onclick="location.reload()">MAIN LAGI</button>
         </div>
     </div>
 
@@ -54,38 +75,53 @@
 
     <div id="ui-layer">
         <div id="stats-bar">
-            <div class="box">🪙 Koin: <span id="ui-coins">0</span></div>
+            <div class="box">⭐ LVL <span id="ui-lvl">1</span> | <span id="ui-coins">0</span> 🪙</div>
             <div class="box" style="border-color:var(--gold)">📏 Panjang: <span id="ui-len">15</span></div>
         </div>
-        <div class="menu-btns"><button onclick="openShop()">🛒 SKIN</button></div>
-        <div id="joy-base" class="pointer"><div id="joy-stick"></div></div>
+
+        <div class="menu-btns pointer">
+            <button onclick="openShop()">🛒 TOKO</button>
+        </div>
+
+        <div id="joy-base" class="pointer">
+            <div id="joy-stick"></div>
+        </div>
     </div>
 
     <div id="shop" class="modal hidden">
         <div class="modal-content">
-            <h3>PILIH SKIN</h3>
+            <h3>TOKO SKIN</h3>
             <div id="skin-list" class="grid"></div>
-            <button onclick="closeShop()">TUTUP</button>
+            <button class="pointer" onclick="closeModals()">TUTUP</button>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const WORLD_SIZE = 2500;
         let viewport = { x: 0, y: 0 };
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let saveData = JSON.parse(localStorage.getItem('snake_infinite_save')) || { coins: 0, owned: ['#00f2ff'], active: '#00f2ff' };
-        const skinOptions = [{n:"Cyan", c:"#00f2ff", p:0}, {n:"Neon", c:"#ff0055", p:500}, {n:"Gold", c:"#ffd700", p:2000}, {n:"Toxic", c:"#39ff14", p:1000}];
+        // DATA
+        let data = JSON.parse(localStorage.getItem('snake_pwa_save')) || {
+            coins: 0, lvl: 1, xp: 0, owned: ['#00f2ff'], active: '#00f2ff'
+        };
+
+        const skins = [
+            {n:"Cyan", c:"#00f2ff", p:0},
+            {n:"Pink", c:"#ff0055", p:200},
+            {n:"Gold", c:"#ffd700", p:1000},
+            {n:"Green", c:"#39ff14", p:500}
+        ];
 
         class Snake {
             constructor(x, y, color, isBot = false) {
-                this.segments = [];
-                for(let i=0; i<15; i++) this.segments.push({x: x-i*5, y: y});
+                this.segments = Array(15).fill({x, y});
                 this.color = color;
                 this.angle = Math.random() * 6.28;
-                this.speed = isBot ? 2.8 : 4;
+                this.speed = isBot ? 2.5 : 4;
                 this.radius = 12;
                 this.isBot = isBot;
                 this.alive = true;
@@ -96,16 +132,8 @@
                 let head = this.segments[0];
 
                 if(this.isBot) {
-                    // Bot mencari buah terdekat
-                    let target = this.getClosestFood(head);
-                    if(target) {
-                        let targetAngle = Math.atan2(target.y - head.y, target.x - head.x);
-                        // Pergerakan halus ke arah buah
-                        let diff = targetAngle - this.angle;
-                        while(diff < -Math.PI) diff += Math.PI*2;
-                        while(diff > Math.PI) diff -= Math.PI*2;
-                        this.angle += diff * 0.1;
-                    }
+                    this.angle += (Math.random() - 0.5) * 0.15;
+                    if(head.x < 100 || head.x > WORLD_SIZE-100 || head.y < 100 || head.y > WORLD_SIZE-100) this.angle += Math.PI/4;
                 }
 
                 let newHead = {
@@ -115,87 +143,78 @@
 
                 this.segments.unshift(newHead);
                 this.segments.pop();
-                this.checkSnakeCollision();
-            }
 
-            getClosestFood(head) {
-                let minSubDist = 400 * 400; // Jarak pandang bot
-                let closest = null;
-                for(let f of foods) {
-                    let d = (f.x - head.x)**2 + (f.y - head.y)**2;
-                    if(d < minSubDist) { minSubDist = d; closest = f; }
-                }
-                return closest;
+                if(newHead.x < 0 || newHead.x > WORLD_SIZE || newHead.y < 0 || newHead.y > WORLD_SIZE) this.die();
             }
-
-            checkSnakeCollision() {
-                let head = this.segments[0];
-                // Cek tabrak badan sendiri (untuk player)
-                if(!this.isBot) {
-                    for(let i=10; i<this.segments.length; i++) {
-                        if(this.dist(head, this.segments[i]) < this.radius) this.die();
-                    }
-                }
-                // Cek tabrak badan ular lain
-                let snakes = [p1, ...bots];
-                for(let s of snakes) {
-                    if(s === this || !s.alive) continue;
-                    for(let seg of s.segments) {
-                        if(this.dist(head, seg) < this.radius + s.radius) {
-                            this.die();
-                            return;
-                        }
-                    }
-                }
-            }
-
-            dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
 
             draw() {
                 if(!this.alive) return;
-                ctx.save();
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.color;
                 this.segments.forEach((s, i) => {
                     ctx.fillStyle = i === 0 ? "white" : this.color;
                     ctx.beginPath();
                     ctx.arc(s.x - viewport.x, s.y - viewport.y, this.radius, 0, Math.PI*2);
                     ctx.fill();
                 });
-                ctx.restore();
             }
 
             die() {
                 this.alive = false;
-                this.segments.forEach(s => foods.push({x: s.x, y: s.y, emoji: '✨', isBonus: true}));
                 if(!this.isBot) {
-                    document.getElementById('final-score').innerText = "Panjang: " + this.segments.length;
+                    document.getElementById('final-score').innerText = "Skor Akhir: " + this.segments.length;
                     document.getElementById('game-over').classList.remove('hidden');
                 } else {
-                    setTimeout(() => {
-                        let idx = bots.indexOf(this);
-                        if(idx > -1) bots[idx] = new Snake(p1.segments[0].x + (Math.random()-0.5)*1000, p1.segments[0].y + (Math.random()-0.5)*1000, `hsl(${Math.random()*360},70%,50%)`, true);
-                    }, 3000);
+                    this.segments.forEach(s => spawnFood(s.x, s.y));
                 }
             }
         }
 
-        let p1 = new Snake(0, 0, saveData.active);
+        let p1 = new Snake(WORLD_SIZE/2, WORLD_SIZE/2, data.active);
         let foods = [];
         let bots = [];
-        let gameActive = false;
+        let peer = null, conn = null;
 
-        function startGame() {
+        function startSinglePlayer() {
             document.getElementById('lobby').classList.add('hidden');
-            for(let i=0; i<200; i++) foods.push({x: (Math.random()-0.5)*3000, y: (Math.random()-0.5)*3000, emoji: '🍎'});
-            for(let i=0; i<10; i++) bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, `hsl(${Math.random()*360},70%,50%)`, true));
-            gameActive = true;
+            for(let i=0; i<150; i++) spawnFood();
+            for(let i=0; i<8; i++) bots.push(new Snake(Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE, `hsl(${Math.random()*360},70%,50%)`, true));
             gameLoop();
         }
 
+        function spawnFood(x, y) {
+            foods.push({ x: x || Math.random()*WORLD_SIZE, y: y || Math.random()*WORLD_SIZE, emoji: ['🍎','🍌','🍉','🍇'][Math.floor(Math.random()*4)] });
+        }
+
+        // --- MULTIPLAYER ---
+        function openMultiplayer() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('multi-menu').classList.remove('hidden'); }
+        function backToMain() { document.getElementById('multi-menu').classList.add('hidden'); document.getElementById('main-menu').classList.remove('hidden'); }
+
+        function createRoom() {
+            let id = Math.floor(1000 + Math.random()*9000);
+            document.getElementById('my-id').innerText = id;
+            peer = new Peer('snake-'+id);
+            peer.on('open', () => console.log("Host Ready"));
+            peer.on('connection', (c) => { conn = c; setupConn(); });
+        }
+
+        function joinRoom() {
+            let id = document.getElementById('join-id').value;
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect('snake-'+id);
+                setupConn();
+            });
+        }
+
+        function setupConn() {
+            conn.on('open', () => { 
+                document.getElementById('lobby').classList.add('hidden');
+                startSinglePlayer(); // Start local engine
+            });
+        }
+
+        // --- CORE LOOP ---
         function gameLoop() {
-            if(!gameActive) return;
-            ctx.fillStyle = "#05050a";
+            ctx.fillStyle = "#0a0a12";
             ctx.fillRect(0,0,canvas.width, canvas.height);
 
             if(p1.alive) {
@@ -203,71 +222,44 @@
                 viewport.y = p1.segments[0].y - canvas.height/2;
             }
 
-            drawGrid();
+            // Draw Grid
+            ctx.strokeStyle = "rgba(255,255,255,0.05)";
+            for(let x = -viewport.x%100; x<canvas.width; x+=100) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+            for(let y = -viewport.y%100; y<canvas.height; y+=100) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
 
-            // Handle Foods
-            ctx.font = "18px Arial";
-            for(let i=foods.length-1; i>=0; i--) {
-                let f = foods[i];
+            // Foods
+            ctx.font = "20px Arial";
+            foods.forEach((f, i) => {
                 ctx.fillText(f.emoji, f.x - viewport.x, f.y - viewport.y);
-                
-                // Player makan
-                if(p1.alive && p1.dist(p1.segments[0], f) < 25) {
-                    foods.splice(i, 1);
-                    p1.segments.push({...p1.segments[p1.segments.length-1]});
-                    saveData.coins += f.isBonus ? 10 : 2;
-                    updateUI();
-                    refillFood();
-                } else {
-                    // Bot makan
-                    for(let b of bots) {
-                        if(b.alive && b.dist(b.segments[0], f) < 25) {
-                            foods.splice(i, 1);
-                            b.segments.push({...b.segments[b.segments.length-1]});
-                            refillFood();
-                            break;
-                        }
-                    }
+                let dx = p1.segments[0].x - f.x, dy = p1.segments[0].y - f.y;
+                if(Math.sqrt(dx*dx+dy*dy) < 25) {
+                    foods.splice(i, 1); spawnFood();
+                    p1.segments.push(p1.segments[p1.segments.length-1]);
+                    data.coins += 5; updateUI();
                 }
-            }
+            });
 
             p1.update(); p1.draw();
-            bots.forEach(b => { b.update(); b.draw(); });
+            bots.forEach(b => { 
+                b.update(); b.draw(); 
+                // Collision with Bot body
+                b.segments.forEach((s, idx) => {
+                    let dx = p1.segments[0].x - s.x, dy = p1.segments[0].y - s.y;
+                    if(idx > 0 && Math.sqrt(dx*dx+dy*dy) < 20) p1.die();
+                });
+            });
 
             requestAnimationFrame(gameLoop);
         }
 
-        function refillFood() {
-            if(foods.length < 200) {
-                foods.push({
-                    x: p1.segments[0].x + (Math.random()-0.5)*3000,
-                    y: p1.segments[0].y + (Math.random()-0.5)*3000,
-                    emoji: ['🍎','🍌','🍓','🍉'][Math.floor(Math.random()*4)]
-                });
-            }
-        }
-
-        function drawGrid() {
-            ctx.strokeStyle = "rgba(0,242,255,0.05)";
-            let size = 100;
-            let startX = Math.floor(viewport.x / size) * size;
-            let startY = Math.floor(viewport.y / size) * size;
-            for(let x=startX; x < startX + canvas.width + size; x+=size) {
-                ctx.beginPath(); ctx.moveTo(x - viewport.x, 0); ctx.lineTo(x - viewport.x, canvas.height); ctx.stroke();
-            }
-            for(let y=startY; y < startY + canvas.height + size; y+=size) {
-                ctx.beginPath(); ctx.moveTo(0, y - viewport.y); ctx.lineTo(canvas.width, y - viewport.y); ctx.stroke();
-            }
-        }
-
-        // --- CONTROLS ---
+        // UI & CONTROL
         let joyActive = false;
-        document.getElementById('joy-base').addEventListener('touchstart', () => joyActive = true);
+        document.getElementById('joy-base').addEventListener('touchstart', (e) => joyActive = true);
         window.addEventListener('touchmove', (e) => {
-            if(!joyActive || !p1.alive) return;
+            if(!joyActive) return;
             let t = e.touches[0];
-            let r = document.getElementById('joy-base').getBoundingClientRect();
-            let dx = t.clientX - (r.left + r.width/2), dy = t.clientY - (r.top + r.height/2);
+            let rect = document.getElementById('joy-base').getBoundingClientRect();
+            let dx = t.clientX - (rect.left + rect.width/2), dy = t.clientY - (rect.top + rect.height/2);
             p1.angle = Math.atan2(dy, dx);
             let dist = Math.min(Math.sqrt(dx*dx+dy*dy), 40);
             document.getElementById('joy-stick').style.transform = `translate(${Math.cos(p1.angle)*dist}px, ${Math.sin(p1.angle)*dist}px)`;
@@ -275,29 +267,33 @@
         window.addEventListener('touchend', () => { joyActive = false; document.getElementById('joy-stick').style.transform = `translate(0,0)`; });
 
         function updateUI() {
-            document.getElementById('ui-coins').innerText = saveData.coins;
+            document.getElementById('ui-lvl').innerText = data.lvl;
+            document.getElementById('ui-coins').innerText = data.coins;
             document.getElementById('ui-len').innerText = p1.segments.length;
-            localStorage.setItem('snake_infinite_save', JSON.stringify(saveData));
+            localStorage.setItem('snake_pwa_save', JSON.stringify(data));
         }
 
         function openShop() {
             document.getElementById('shop').classList.remove('hidden');
             let list = document.getElementById('skin-list');
             list.innerHTML = "";
-            skinOptions.forEach(s => {
-                let isOwned = saveData.owned.includes(s.c);
-                list.innerHTML += `<div class="card ${saveData.active==s.c?'active':''}" onclick="buySkin('${s.c}',${s.p})">
-                    <div style="background:${s.c};width:25px;height:25px;border-radius:50%;margin:auto"></div>
-                    <p style="font-size:11px">${s.n}<br>${isOwned?'AKTIF':'💰'+s.p}</p>
+            skins.forEach(s => {
+                let own = data.owned.includes(s.c);
+                list.innerHTML += `<div class="card ${data.active==s.c?'active':''}" onclick="buySkin('${s.c}',${s.p})">
+                    <div style="background:${s.c};width:20px;height:20px;border-radius:50%;margin:auto"></div>
+                    <p>${s.n}<br>${own?'Milik':'💰'+s.p}</p>
                 </div>`;
             });
         }
+
         function buySkin(c, p) {
-            if(saveData.owned.includes(c)) saveData.active = c;
-            else if(saveData.coins >= p) { saveData.coins -= p; saveData.owned.push(c); saveData.active = c; }
-            p1.color = saveData.active; updateUI(); openShop();
+            if(data.owned.includes(c)) data.active = c;
+            else if(data.coins >= p) { data.coins -= p; data.owned.push(c); data.active = c; }
+            p1.color = data.active; updateUI(); openShop();
         }
-        function closeShop() { document.getElementById('shop').classList.add('hidden'); }
+
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'lobby' && m.id !== 'game-over') m.classList.add('hidden') }); }
+        
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
     </script>
 </body>
