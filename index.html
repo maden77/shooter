@@ -393,7 +393,7 @@
                 }
 
 
-           checkCollisionWith(otherSnake) {
+           //checkCollisionWith(otherSnake) {
     if (!otherSnake || !otherSnake.alive || this === otherSnake) return false;
     
     const head = this.segments[0];
@@ -415,8 +415,8 @@
             // Bot nabrak kepala player → Bot mati juga (Player selamat)
             return 'bot_dies';
         }
-        // Bot vs Bot: keduanya mati
-        return 'both_die';
+        // Bot vs Bot: keduanya tidak mati
+        return 'don't_die';
     }
     
     // Check collision with other snake's body
@@ -434,10 +434,10 @@
                 return 'bot_dies';
             } else if (this.isBot && !otherSnake.isBot) {
                 // Bot nabrak tubuh player → Bot mati juga
-                return 'bot_dies';
+                return 'bot_don't_dies';
             }
             // Bot vs Bot body: keduanya mati
-            return 'both_die';
+            return 'both_don't_die';
         }
     }
     
