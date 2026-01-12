@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cacing Arena Ultimate: Food & Shop</title>
+    <title>Cacing Arena: Pro Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; font-family: 'Segoe UI', sans-serif; }
-        body { background: #000; overflow: hidden; touch-action: none; position: fixed; width: 100%; height: 100%; color: white; }
-        canvas { display: block; background: radial-gradient(circle, #0a0a2a 0%, #000 100%); }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { background: #000; overflow: hidden; touch-action: none; position: fixed; width: 100%; height: 100%; color: white; font-family: sans-serif; }
+        canvas { display: block; background: #050510; }
 
-        /* UI LAYER */
-        #ui-layer { position: absolute; inset: 0; z-index: 100; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); }
-        .panel { background: #111; padding: 25px; border-radius: 20px; border: 3px solid #a855f7; width: 90%; max-width: 400px; text-align: center; }
-        
-        .btn { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
-        .btn-play { background: #a855f7; }
-        .btn-shop { background: #f59e0b; }
+        /* UI MENU */
+        #ui-layer { position: absolute; inset: 0; z-index: 100; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); }
+        .panel { background: #111; padding: 25px; border-radius: 20px; border: 2px solid #a855f7; width: 90%; max-width: 400px; text-align: center; }
         
         input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #000; color: #fff; text-align: center; }
+        .btn { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-play { background: #a855f7; }
+        .btn-shop { background: #f59e0b; }
+        .btn-join { background: #3b82f6; }
 
         /* HUD */
         #hud { position: absolute; top: 15px; left: 15px; z-index: 50; display: none; }
-        .badge { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; border: 1px solid #a855f7; display: inline-block; margin-right: 5px; font-weight: bold; }
-
-        /* SHOP MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
-        .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; max-height: 300px; overflow-y: auto; }
-        .item { background: #222; padding: 10px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; }
-        .item.active { border-color: #a855f7; }
+        .badge { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; border: 1px solid #a855f7; display: inline-block; margin-right: 5px; }
 
         /* JOYSTICK */
         #joy-zone { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; z-index: 50; display: none; }
         .joy-base { width: 100%; height: 100%; background: rgba(255,255,255,0.05); border-radius: 50%; border: 2px solid #a855f7; position: relative; }
         .joy-stick { width: 50px; height: 50px; background: #a855f7; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
 
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 200; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -43,25 +39,29 @@
 
     <div id="ui-layer">
         <div class="panel">
-            <h1 style="color:#a855f7; margin-bottom:15px;">🐍 CACING ARENA</h1>
-            <input type="text" id="nick" value="Jagoan" maxlength="10">
-            <button class="btn btn-play" onclick="Game.start()">MAIN SOLO</button>
+            <h1 style="color:#a855f7">🐍 CACING ARENA</h1>
+            <p id="my-id" style="font-size: 10px; color: #777; margin-bottom: 10px;">ID: Memuat...</p>
+            <input type="text" id="nick" value="Jagoan" placeholder="Nickname">
+            <button class="btn btn-play" onclick="Game.start(false)">MAIN SOLO</button>
+            <div style="border-top: 1px solid #333; margin: 10px 0;"></div>
+            <input type="text" id="target-id" placeholder="Masukkan ID Teman">
+            <button class="btn btn-join" onclick="Game.start(true)">GABUNG MABAR</button>
             <button class="btn btn-shop" onclick="Shop.open()">TOKO SKIN</button>
-            <p id="menu-coins" style="margin-top:10px; color:#ffd700;">🪙 0</p>
+            <p style="margin-top:10px; color: gold;">🪙 <span id="menu-coin">0</span></p>
         </div>
     </div>
 
     <div id="shop-modal" class="modal">
         <div class="panel">
             <h2>🛒 TOKO SKIN</h2>
-            <div id="skin-list" class="shop-grid"></div>
+            <div id="skin-list" style="margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
             <button class="btn btn-play" onclick="Shop.close()">TUTUP</button>
         </div>
     </div>
 
     <div id="hud">
-        <div class="badge">📏 <span id="score">0</span></div>
         <div class="badge">🪙 <span id="coins">0</span></div>
+        <div class="badge">📏 <span id="score">0</span></div>
     </div>
 
     <div id="joy-zone">
@@ -72,13 +72,12 @@
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
         
-        // --- DATA ---
-        const EMOJIS = ['🍖', '🍔', '🍕', '🍩', '🍎', '🍓', '🌮'];
+        // --- DATA & CONFIG ---
         const SKINS = [
-            { id: 'purple', name: 'Ungu', main: '#a855f7', sec: '#6b21a8', price: 0 },
-            { id: 'green', name: 'Hijau', main: '#22c55e', sec: '#166534', price: 100 },
-            { id: 'red', name: 'Merah', main: '#ef4444', sec: '#991b1b', price: 250 },
-            { id: 'gold', name: 'Emas', main: '#fbbf24', sec: '#92400e', price: 1000 }
+            { id: 'purple', main: '#a855f7', sec: '#6b21a8', price: 0 },
+            { id: 'green', main: '#22c55e', sec: '#166534', price: 100 },
+            { id: 'blue', main: '#3b82f6', sec: '#1d4ed8', price: 200 },
+            { id: 'gold', main: '#fbbf24', sec: '#92400e', price: 500 }
         ];
 
         let storage = {
@@ -87,215 +86,194 @@
             active: localStorage.getItem('c_active') || 'purple'
         };
 
-        let state = { active: false, player: null, bots: [], foods: [], cam: {x:0, y:0} };
+        let state = { active: false, player: null, foods: [], others: {}, bots: [], cam: {x:0, y:0}, isMulti: false };
+        let net = { peer: null, conn: null };
 
-        // --- CLASS CACING ---
+        // --- SNAKE CLASS (INTERPOLATED FOR SMOOTHNESS) ---
         class Snake {
             constructor(x, y, name, skinId, isBot = false) {
                 this.x = x; this.y = y; this.name = name;
                 this.isBot = isBot;
                 this.skin = SKINS.find(s => s.id === skinId) || SKINS[0];
-                this.angle = Math.random() * 6.28;
-                this.speed = isBot ? 2.5 : 4;
+                this.angle = 0;
+                this.speed = 4;
                 this.radius = 20;
                 this.score = 0;
                 this.segments = [];
-                for(let i=0; i<20; i++) this.segments.push({x, y});
+                // Inisialisasi segmen rapat agar tidak renggang/bergelombang
+                for(let i=0; i<30; i++) this.segments.push({x, y});
             }
 
             update() {
-                if (this.isBot) this.updateAI();
-                
                 this.x += Math.cos(this.angle) * this.speed;
                 this.y += Math.sin(this.angle) * this.speed;
 
-                this.segments.unshift({x: this.x, y: this.y});
-                if (this.segments.length > 20 + Math.floor(this.score/10)) this.segments.pop();
+                // Logika agar badan lurus: hanya tambahkan segmen baru jika jarak sudah cukup
+                const head = this.segments[0];
+                const dist = Math.hypot(this.x - head.x, this.y - head.y);
+                
+                if (dist > 5) { // Jarak antar segmen kecil agar terlihat padat (lurus)
+                    this.segments.unshift({x: this.x, y: this.y});
+                    const maxLen = 30 + Math.floor(this.score / 5);
+                    if (this.segments.length > maxLen) this.segments.pop();
+                }
 
-                if (this.isBot) this.magnet();
-            }
-
-            updateAI() {
-                if (Math.random() < 0.02) this.angle += (Math.random() - 0.5);
-                if (Math.abs(this.x) > 2000 || Math.abs(this.y) > 2000) this.angle += Math.PI;
-            }
-
-            magnet() {
-                state.foods.forEach(f => {
-                    let d = Math.hypot(this.x - f.x, this.y - f.y);
-                    if (d < 150) { f.x += (this.x - f.x)*0.1; f.y += (this.y - f.y)*0.1; }
-                });
+                if(this.isBot) this.angle += (Math.random() - 0.5) * 0.2;
             }
 
             draw() {
+                ctx.save();
                 for (let i = this.segments.length - 1; i >= 0; i--) {
-                    let s = this.segments[i];
-                    ctx.fillStyle = (i % 4 < 2) ? this.skin.main : this.skin.sec;
+                    const s = this.segments[i];
+                    ctx.fillStyle = (i % 6 < 3) ? this.skin.main : this.skin.sec;
                     ctx.beginPath();
-                    ctx.arc(s.x - state.cam.x + canvas.width/2, s.y - state.cam.y + canvas.height/2, this.radius, 0, 6.28);
+                    ctx.arc(s.x - state.cam.x + canvas.width/2, s.y - state.cam.y + canvas.height/2, this.radius, 0, Math.PI*2);
                     ctx.fill();
-                    ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.stroke();
                 }
                 // Nama
-                ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+                ctx.fillStyle = "white"; ctx.textAlign = "center";
                 ctx.fillText(this.name, this.x - state.cam.x + canvas.width/2, this.y - state.cam.y + canvas.height/2 - 35);
+                ctx.restore();
             }
         }
 
-        // --- GAME ENGINE ---
+        // --- GAME SYSTEM ---
         const Game = {
-            start: function() {
+            start: function(mabar) {
+                const nick = document.getElementById('nick').value || "User";
+                state.player = new Snake(0, 0, nick, storage.active);
+                state.active = true;
+                state.isMulti = mabar;
+                
                 document.getElementById('ui-layer').classList.add('hidden');
                 document.getElementById('hud').style.display = 'block';
                 document.getElementById('joy-zone').style.display = 'block';
-                
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
 
-                const nick = document.getElementById('nick').value || "Jagoan";
-                state.player = new Snake(0, 0, nick, storage.active);
-                state.bots = []; state.foods = [];
-                
-                for(let i=0; i<6; i++) {
-                    state.bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, "BOT", "red", true));
+                if(mabar) {
+                    const tid = document.getElementById('target-id').value;
+                    if(tid) { net.conn = net.peer.connect(tid); this.setupConn(); }
                 }
-                for(let i=0; i<100; i++) this.spawnFood();
 
-                state.active = true;
+                // Makanan melimpah
+                for(let i=0; i<150; i++) this.spawnFood();
+                // Bot (tidak mematikan)
+                for(let i=0; i<5; i++) state.bots.push(new Snake(Math.random()*500, Math.random()*500, "BOT", "purple", true));
+
                 this.loop();
             },
 
             spawnFood: function() {
+                const emojis = ['🍎','🍔','🍕','🍩','🍖','🍗'];
                 state.foods.push({
-                    x: (Math.random()-0.5)*4000, y: (Math.random()-0.5)*4000,
-                    icon: EMOJIS[Math.floor(Math.random()*EMOJIS.length)]
+                    x: (Math.random()-0.5) * 5000, 
+                    y: (Math.random()-0.5) * 5000, 
+                    icon: emojis[Math.floor(Math.random()*emojis.length)]
                 });
             },
 
             loop: function() {
-                if (!state.active) return;
-                ctx.fillStyle = "#0a0a1a"; ctx.fillRect(0,0,canvas.width,canvas.height);
+                if(!state.active) return;
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                ctx.fillStyle = "#050510"; ctx.fillRect(0,0,canvas.width,canvas.height);
 
                 state.cam.x += (state.player.x - state.cam.x) * 0.1;
                 state.cam.y += (state.player.y - state.cam.y) * 0.1;
 
-                // Makanan
-                ctx.font = "24px Arial";
+                // Gambar Makanan
+                ctx.font = "20px Arial";
                 state.foods.forEach((f, i) => {
-                    let dx = f.x - state.cam.x + canvas.width/2;
-                    let dy = f.y - state.cam.y + canvas.height/2;
-                    ctx.fillText(f.icon, dx, dy);
-
-                    if (Math.hypot(state.player.x - f.x, state.player.y - f.y) < 30) {
-                        state.player.score += 10;
-                        document.getElementById('score').innerText = state.player.score;
+                    ctx.fillText(f.icon, f.x - state.cam.x + canvas.width/2, f.y - state.cam.y + canvas.height/2);
+                    if(Math.hypot(state.player.x - f.x, state.player.y - f.y) < 30) {
                         state.foods.splice(i, 1);
+                        state.player.score += 5;
+                        storage.coins += 1;
                         this.spawnFood();
+                        document.getElementById('score').innerText = state.player.score;
+                        document.getElementById('coins').innerText = storage.coins;
                     }
                 });
 
-                // Update & Collision
                 state.player.update();
-                
-                state.bots.forEach((b, bi) => {
-                    b.update();
-                    // Kita nabrak bot?
-                    for(let seg of b.segments) {
-                        if(Math.hypot(state.player.x - seg.x, state.player.y - seg.y) < 25) this.die();
-                    }
-                    // Bot nabrak kita?
-                    for(let pseg of state.player.segments) {
-                        if(Math.hypot(b.x - pseg.x, b.y - pseg.y) < 25) {
-                            state.bots.splice(bi, 1);
-                            storage.coins += 20; // Hadiah bunuh bot
-                            this.save();
-                            document.getElementById('coins').innerText = storage.coins;
-                            state.bots.push(new Snake((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, "BOT", "red", true));
-                        }
-                    }
-                });
-
-                state.bots.forEach(b => b.draw());
                 state.player.draw();
+                state.bots.forEach(b => { b.update(); b.draw(); });
+
+                // Multi player sync
+                if(net.conn && net.conn.open) {
+                    net.conn.send({x: state.player.x, y: state.player.y, segments: state.player.segments, nick: state.player.name, skin: state.player.skin});
+                }
+
+                // Draw Others
+                for(let id in state.others) {
+                    const o = state.others[id];
+                    o.segments.forEach((s, i) => {
+                        ctx.fillStyle = (i % 6 < 3) ? o.skin.main : o.skin.sec;
+                        ctx.beginPath();
+                        ctx.arc(s.x - state.cam.x + canvas.width/2, s.y - state.cam.y + canvas.height/2, 20, 0, 6.28);
+                        ctx.fill();
+                    });
+                }
 
                 requestAnimationFrame(() => this.loop());
             },
 
-            die: function() {
-                state.active = false;
-                alert("💀 MATI! Skor: " + state.player.score);
-                location.reload();
-            },
-
-            save: function() {
-                localStorage.setItem('c_coins', storage.coins);
-                localStorage.setItem('c_owned', JSON.stringify(storage.owned));
-                localStorage.setItem('c_active', storage.active);
+            setupConn: function() {
+                net.conn.on('data', data => { state.others[net.conn.peer] = data; });
             }
         };
 
-        // --- SHOP SYSTEM ---
+        // --- TOKO ---
         const Shop = {
             open: function() {
                 const list = document.getElementById('skin-list');
                 list.innerHTML = '';
                 SKINS.forEach(s => {
-                    const isOwned = storage.owned.includes(s.id);
+                    const owned = storage.owned.includes(s.id);
                     list.innerHTML += `
-                        <div class="item ${storage.active === s.id ? 'active' : ''}" onclick="Shop.buy('${s.id}')">
-                            <div style="background:${s.main}; height:20px; border-radius:10px;"></div>
-                            <p>${s.name}</p>
-                            <p style="color:#ffd700">${isOwned ? 'MILIK' : '🪙'+s.price}</p>
-                        </div>
-                    `;
+                        <div style="background:#222; padding:10px; border-radius:10px; border:2px solid ${storage.active==s.id?'#a855f7':'transparent'}" onclick="Shop.buy('${s.id}')">
+                            <div style="background:${s.main}; height:20px; border-radius:5px;"></div>
+                            <p style="font-size:12px; margin:5px 0;">${owned?'MILIK':'🪙'+s.price}</p>
+                        </div>`;
                 });
                 document.getElementById('shop-modal').style.display = 'flex';
-                document.getElementById('menu-coins').innerText = "🪙 " + storage.coins;
+                document.getElementById('menu-coin').innerText = storage.coins;
             },
             buy: function(id) {
                 const s = SKINS.find(x => x.id === id);
-                if (storage.owned.includes(id)) {
-                    storage.active = id;
-                } else if (storage.coins >= s.price) {
-                    storage.coins -= s.price;
-                    storage.owned.push(id);
-                    storage.active = id;
-                } else {
-                    alert("Koin tidak cukup!");
+                if(storage.owned.includes(id)) { storage.active = id; }
+                else if(storage.coins >= s.price) {
+                    storage.coins -= s.price; storage.owned.push(id); storage.active = id;
                 }
-                Game.save();
+                localStorage.setItem('c_coins', storage.coins);
+                localStorage.setItem('c_owned', JSON.stringify(storage.owned));
+                localStorage.setItem('c_active', storage.active);
                 this.open();
             },
             close: function() { document.getElementById('shop-modal').style.display = 'none'; }
         };
 
+        // --- PEER JS (MABAR) ---
+        net.peer = new Peer();
+        net.peer.on('open', id => document.getElementById('my-id').innerText = "ID Kamu: " + id);
+        net.peer.on('connection', c => { net.conn = c; Game.setupConn(); });
+
         // --- JOYSTICK ---
-        const Joy = {
-            init: function() {
-                const z = document.getElementById('joy-zone');
-                const s = document.getElementById('stick');
-                let dragging = false, start = {x:0, y:0};
-
-                const move = e => {
-                    if(!dragging || !state.player) return;
-                    const p = e.touches ? e.touches[0] : e;
-                    const dx = p.clientX - start.x, dy = p.clientY - start.y;
-                    state.player.angle = Math.atan2(dy, dx);
-                    const dist = Math.min(Math.hypot(dx,dy), 35);
-                    s.style.transform = `translate(${Math.cos(state.player.angle)*dist}px, ${Math.sin(state.player.angle)*dist}px)`;
-                };
-
-                z.onmousedown = e => { dragging=true; start={x:e.clientX, y:e.clientY}; };
-                z.ontouchstart = e => { dragging=true; start={x:e.touches[0].clientX, y:e.touches[0].clientY}; };
-                window.onmousemove = move; window.ontouchmove = move;
-                window.onmouseup = window.ontouchend = () => { dragging=false; s.style.transform='none'; };
-            }
+        const joy = document.getElementById('joy-zone');
+        const stick = document.getElementById('stick');
+        let start = {x:0, y:0}, dragging = false;
+        const handleJoy = (e) => {
+            if(!dragging) return;
+            const p = e.touches ? e.touches[0] : e;
+            const dx = p.clientX - start.x;
+            const dy = p.clientY - start.y;
+            state.player.angle = Math.atan2(dy, dx);
+            const dist = Math.min(Math.hypot(dx,dy), 35);
+            stick.style.transform = `translate(${Math.cos(state.player.angle)*dist}px, ${Math.sin(state.player.angle)*dist}px)`;
         };
+        joy.addEventListener('touchstart', e => { dragging=true; start={x:e.touches[0].clientX, y:e.touches[0].clientY}; });
+        window.addEventListener('touchmove', handleJoy);
+        window.addEventListener('touchend', () => { dragging=false; stick.style.transform = 'none'; });
 
-        window.onload = () => {
-            document.getElementById('menu-coins').innerText = "🪙 " + storage.coins;
-            Joy.init();
-        };
+        window.onload = () => { document.getElementById('menu-coin').innerText = storage.coins; };
     </script>
 </body>
 </html>
