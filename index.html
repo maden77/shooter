@@ -707,15 +707,22 @@
                 this.segments = [];
                 this.color = this.getSkinColor(skin);
                 
-                // Create body with more segments for cacing shape
-                const length = isBot ? 20 : 15;
-                for (let i = 0; i < length; i++) {
-                    this.segments.push({
-                        x: this.x - i * 2.5,
-                        y: this.y,
-                        width: isBot ? 14 : 16
-                    });
-                }
+                
+                // Create straight body with tapered segments
+const baseLength = isBot ? 22 : 18;  // Lebih panjang untuk fluiditas
+const spacing = 2.0;  // Jarak antar segment
+
+for (let i = 0; i < baseLength; i++) {
+    // Tapering effect: kepala besar, ekor kecil
+    const taperFactor = 1.0 - (i / baseLength) * 0.5; // Mengecil 50%
+    const segmentWidth = (isBot ? 13 : 15) * taperFactor;
+    
+    this.segments.push({
+        x: this.x - i * spacing,
+        y: this.y,
+        width: Math.max(8, segmentWidth)  // Minimal 8px
+    });
+}
                 
                 // BOT SPECIFIC PROPERTIES - ENHANCED
                 if (isBot) {
@@ -1301,7 +1308,7 @@
             }
             
             // Spawn more bots if needed
-            if (aliveBots < 6 && Math.random() < 0.01) {
+            if (aliveBots < 10 && Math.random() < 0.01) {
                 spawnEnhancedBot();
             }
             
@@ -1369,7 +1376,7 @@
                 ctx.rotate(food.rotation);
                 
                 // Glow effect
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 10;
                 ctx.shadowColor = food.color;
                 
                 // Draw food
