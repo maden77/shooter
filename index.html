@@ -775,16 +775,40 @@ for (let i = 0; i < baseLength; i++) {
                     y: this.y,
                     width: this.isBot ? 14 : 16
                 });
+    // Update segments dengan IK (Inverse Kinematics) untuk gerakan smooth
+for (let i = this.segments.length - 1; i >= 0; i--) {
+    if (i === 0) {
+        // Segment pertama (kepala) mengikuti posisi utama
+        this.segments[i].x = this.x;
+        this.segments[i].y = this.y;
+    } else {
+        // Segment lainnya mengikuti segment sebelumnya dengan smoothing
+        const segment = this.segments[i];
+        const target = this.segments[i - 1];
+        
+        // Hitung arah menuju target
+        const dx = target.x - segment.x;
+        const dy = target.y - segment.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Jarak ideal antar segment
+        const idealDistance = isBot ? 2.2 : 2.5;
+        
+        if (distance > idealDistance) {
+            // Geser segment mendekati target
+            const moveX = dx * 0.3; // 30% dari jarak
+            const moveY = dy * 0.3;
+            segment.x += moveX;
+            segment.y += moveY;
+        }
+        
+        // Smoothing untuk pergerakan natural
+        const smoothing = 0.2; // Semakin kecil = semakin kaku
+        segment.x += (target.x - segment.x) * smoothing;
+        segment.y += (target.y - segment.y) * smoothing;
+    }
+}
                 
-                // Apply wave effect to body
-                for (let i = 0; i < this.segments.length; i++) {
-                    const segment = this.segments[i];
-                    if (i > 0 && i < this.segments.length - 1) {
-                        const wave = Math.sin(Date.now() * 0.001 + i * 0.2) * 3;
-                        segment.x += Math.cos(this.angle + Math.PI/2) * wave;
-                        segment.y += Math.sin(this.angle + Math.PI/2) * wave;
-                    }
-                }
                 
                 if (this.segments.length > 100) {
                     this.segments.pop();
