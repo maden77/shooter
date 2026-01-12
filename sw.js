@@ -1,11 +1,11 @@
 const CACHE_NAME = 'cacing-1';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './pwa.js',
-  './manifest.json',
-    './icons/icon-192x192.png',
-  './icons/icon-512x512.png',
+  '/',
+  '/index.html',
+  '/pwa.js',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 // Install: Simpan aset ke cache
@@ -42,7 +42,7 @@ self.addEventListener('fetch', event => {
       });
     }).catch(() => {
       if (event.request.headers.get('accept').includes('text/html')) {
-        return caches.match('./index.html');
+        return caches.match('/index.html');
       }
     })
   );
